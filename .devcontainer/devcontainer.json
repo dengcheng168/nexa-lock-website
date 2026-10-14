@@ -1,6 +1,11 @@
 {
   "name": "NEXA LOCK Website Preview",
   "image": "mcr.microsoft.com/devcontainers/javascript-node:22-bookworm",
+  "features": {
+    "ghcr.io/devcontainers/features/sshd:1": {
+      "version": "latest"
+    }
+  },
   "forwardPorts": [3000],
   "portsAttributes": {
     "3000": {
