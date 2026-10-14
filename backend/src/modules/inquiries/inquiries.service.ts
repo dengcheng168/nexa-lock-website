@@ -5,7 +5,7 @@ import { sendMail } from '../../lib/mailer.js';
 import { toCsv } from '../../lib/csv.js';
 import { logger } from '../../lib/logger.js';
 import { sendGa4LeadEvent } from '../../lib/ga4-measurement.js';
-import { MetaConversionError, sendMetaInquiryEvents, sendMetaQualityEvent } from '../../lib/meta-conversions.js';
+import { MetaConversionError, resolveMetaEventSourcePath, sendMetaInquiryEvents, sendMetaQualityEvent } from '../../lib/meta-conversions.js';
 import { env } from '../../config/env.js';
 import type { CreateInquiryInput, UpdateInquiryInput } from './inquiries.schema.js';
 
@@ -35,7 +35,7 @@ export async function createInquiry(
     },
     orderBy: { createdAt: 'desc' },
   });
-  if (duplicate) return duplicate;
+  if (duplicate) return { inquiry: duplicate, created: false as const };
 
   if (!isHoneypotTriggered) {
     const settings = await prisma.siteSetting.findUnique({ where: { id: 1 } });
@@ -59,6 +59,8 @@ export async function createInquiry(
       status: isHoneypotTriggered ? 'SPAM' : 'NEW',
       ipAddress: meta.ipAddress,
       userAgent: meta.userAgent,
+      metaFbp,
+      metaFbc,
     },
   });
 
@@ -83,29 +85,43 @@ export async function createInquiry(
     });
   }
 
-  return inquiry;
+  return { inquiry, created: true as const };
 }
 
-export async function reportInquiryQuality(prisma: PrismaClient, inquiryId: number, status: string): Promise<void> {
+export interface InquiryQualityReportResult {
+  eventName: 'QualifiedLead' | 'QuoteProvided' | 'SaleWon';
+  eventId: string;
+}
+
+export async function reportInquiryQuality(
+  prisma: PrismaClient,
+  inquiryId: number,
+  status: string,
+): Promise<InquiryQualityReportResult | null> {
   const names: Record<string, 'QualifiedLead' | 'QuoteProvided' | 'SaleWon'> = {
     QUALIFIED: 'QualifiedLead',
     QUOTED: 'QuoteProvided',
     WON: 'SaleWon',
   };
   const eventName = names[status];
-  if (!eventName) return;
+  if (!eventName) return null;
   const inquiry = await prisma.inquiry.findUnique({ where: { id: inquiryId } });
-  if (!inquiry) return;
+  if (!inquiry) return null;
+  const eventId = `crm-${eventName}-${inquiry.id}`;
   await sendMetaQualityEvent({
     prisma,
     eventName,
-    eventId: `crm-${eventName}-${inquiry.id}`,
+    eventId,
     eventTime: new Date(),
     sourceUrl: inquiry.sourcePage,
     email: inquiry.email,
     phone: inquiry.phone || inquiry.whatsapp,
     firstName: inquiry.name,
     country: inquiry.country,
+    fbp: inquiry.metaFbp,
+    fbc: inquiry.metaFbc,
+    clientIpAddress: inquiry.ipAddress,
+    clientUserAgent: inquiry.userAgent,
     customData: {
       inquiry_id: inquiry.id,
       product: inquiry.productName,
@@ -115,6 +131,16 @@ export async function reportInquiryQuality(prisma: PrismaClient, inquiryId: numb
       page_language: inquiry.pageLanguage,
     },
   });
+  return { eventName, eventId };
+}
+
+const META_QUALITY_STATUSES = new Set(['QUALIFIED', 'QUOTED', 'WON']);
+
+/** Only report a CRM quality event when the inquiry actually enters that stage. */
+export function shouldReportInquiryQuality(previousStatus: string, nextStatus?: string): boolean {
+  return nextStatus !== undefined
+    && previousStatus !== nextStatus
+    && META_QUALITY_STATUSES.has(nextStatus);
 }
 
 async function notifyMetaLead(
@@ -130,9 +156,7 @@ async function notifyMetaLead(
   if (!inquiry || !settings?.siteBaseUrl) return;
   // Do not let an arbitrary submitted sourcePage turn event_source_url into a
   // different origin. The frontend only submits relative site routes.
-  const sourcePath = inquiry.sourcePage?.startsWith('/') && !inquiry.sourcePage.startsWith('//')
-    ? inquiry.sourcePage
-    : '/contact';
+  const sourcePath = resolveMetaEventSourcePath(inquiry.sourcePage);
   await sendMetaInquiryEvents({
     pixelId: settings.metaPixelId,
     accessToken: env.META_CAPI_ACCESS_TOKEN,

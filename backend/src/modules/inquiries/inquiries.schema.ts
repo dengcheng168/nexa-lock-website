@@ -1,5 +1,15 @@
 import { z } from 'zod';
 
+export const inquiryStatusSchema = z.enum([
+  'NEW',
+  'CONTACTED',
+  'QUALIFIED',
+  'QUOTED',
+  'WON',
+  'CLOSED',
+  'SPAM',
+]);
+
 export const createInquirySchema = z.object({
   name: z.string().min(1, '姓名不能为空'),
   company: z.string().optional(),
@@ -23,12 +33,12 @@ export const createInquirySchema = z.object({
 });
 
 export const updateInquirySchema = z.object({
-  status: z.enum(['NEW', 'CONTACTED', 'QUOTED', 'CLOSED', 'SPAM']).optional(),
+  status: inquiryStatusSchema.optional(),
   adminNotes: z.string().optional(),
 });
 
 export const inquiryListQuerySchema = z.object({
-  status: z.enum(['NEW', 'CONTACTED', 'QUOTED', 'CLOSED', 'SPAM']).optional(),
+  status: inquiryStatusSchema.optional(),
   q: z.string().optional(),
   sourcePage: z.string().optional(),
   pageLanguage: z.string().optional(),

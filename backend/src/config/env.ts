@@ -29,7 +29,7 @@ const envSchema = z.object({
   ADMIN_INIT_PASSWORD: z.string().optional(),
 
   UPLOAD_DIR: z.string().default('./uploads'),
-  MAX_UPLOAD_SIZE_MB: z.coerce.number().int().positive().default(10),
+  MAX_UPLOAD_SIZE_MB: z.coerce.number().int().positive().default(100),
 
   TURNSTILE_SITE_KEY: z.string().optional(),
   TURNSTILE_SECRET_KEY: z.string().optional(),

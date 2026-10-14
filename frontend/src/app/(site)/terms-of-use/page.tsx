@@ -2,9 +2,10 @@ import type { Metadata } from 'next';
 import { Container } from '@/components/ui/Container';
 import { Breadcrumbs } from '@/components/ui/Breadcrumbs';
 import { getPageBySlug } from '@/lib/api/content';
+import { getDefaultSocialImages } from '@/lib/seo/base-metadata';
 
 export async function generateMetadata(): Promise<Metadata> {
-  const page = await getPageBySlug('terms-of-use');
+  const [page, images] = await Promise.all([getPageBySlug('terms-of-use'), getDefaultSocialImages()]);
   return {
     title: page?.seoTitle ?? page?.title ?? 'Terms of Use',
     description: page?.seoDescription || 'Read the terms of use for the Koigatech website.',
@@ -12,6 +13,7 @@ export async function generateMetadata(): Promise<Metadata> {
       canonical: '/terms-of-use',
       languages: { en: '/terms-of-use', es: '/es/terms-of-use', 'x-default': '/terms-of-use' },
     },
+    openGraph: { type: 'website', url: '/terms-of-use', images },
   };
 }
 

@@ -8,11 +8,8 @@ import { ProductGallery } from '@/components/product/ProductGallery';
 import { ProductSpecTable } from '@/components/product/ProductSpecTable';
 import { ProductPurchaseInfo, type PurchaseInfoItem } from '@/components/product/ProductPurchaseInfo';
 import { ProductHighlights } from '@/components/product/ProductHighlights';
-import { ProductInfoCard } from '@/components/product/ProductInfoCard';
 import { RelatedProducts } from '@/components/product/RelatedProducts';
 import { ProductPrevNextNav } from '@/components/product/ProductPrevNextNav';
-import { ProductEvidenceLinks } from '@/components/product/ProductEvidenceLinks';
-import { ProductBuyerChecklist } from '@/components/product/ProductBuyerChecklist';
 import { InquiryForm } from '@/components/forms/InquiryForm';
 import { JsonLd } from '@/components/seo/JsonLd';
 import { SOCIAL_ICONS } from '@/components/layout/SocialIcons';
@@ -118,6 +115,7 @@ export default async function ProductDetailPage({
       <div className="mt-4 grid grid-cols-1 gap-8 lg:grid-cols-[1.02fr_minmax(430px,0.98fr)] lg:gap-10">
         <ProductGallery
           mainImage={product.mainImage}
+          videoUrl={product.videoUrl}
           images={product.galleryImages}
           name={product.name}
         />
@@ -189,58 +187,37 @@ export default async function ProductDetailPage({
         </section>
       )}
 
-      {product.features.length > 0 && (
-        <section className="mt-12 border-t border-grey-200 pt-8 lg:mt-14 lg:pt-9">
-          <SectionHeading title="Features" />
-          <div className="mt-7 grid gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
-            {product.features.map((feature, i) => {
-              const label = typeof feature === 'string' ? feature : feature.title;
-              const description = typeof feature === 'string' ? undefined : feature.description;
-              return (
-                <div
-                  key={`${label}-${i}`}
-                  className="flex min-h-[86px] items-start gap-3 rounded-md border border-grey-200 bg-white p-4 shadow-sm"
-                >
-                  <span
-                    aria-hidden="true"
-                    className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-water-100 text-sm font-bold text-water-600"
-                  >
-                    &#10003;
-                  </span>
-                  <div>
-                    <p className="text-[15px] font-semibold leading-snug text-navy-950">{label}</p>
-                    {description && <p className="mt-1 text-[13px] leading-relaxed text-grey-500">{description}</p>}
+      {(hasDescription || product.features.length > 0) && (
+        <section id="description" className="mt-14 scroll-mt-24 bg-grey-50 px-6 py-9 sm:px-9 lg:grid lg:grid-cols-[0.9fr_1.1fr] lg:gap-14 lg:px-12 lg:py-11">
+          <div>
+            <p className="text-xs font-semibold text-water-600">Product details</p>
+            <h2 className="mt-2 text-3xl font-semibold tracking-[-0.03em] text-navy-950">Product Overview</h2>
+            {hasDescription && (
+              <div
+                className="prose prose-sm mt-5 max-w-none text-grey-700"
+                dangerouslySetInnerHTML={{ __html: product.description }}
+              />
+            )}
+          </div>
+          {product.features.length > 0 && (
+            <div className="mt-8 border-t border-grey-200 lg:mt-0 lg:border-l lg:border-t-0 lg:pl-10">
+              {product.features.map((feature, i) => {
+                const label = typeof feature === 'string' ? feature : feature.title;
+                const description = typeof feature === 'string' ? undefined : feature.description;
+                return (
+                  <div key={`${label}-${i}`} className="flex gap-4 border-b border-grey-200 py-4 last:border-b-0">
+                    <span aria-hidden="true" className="mt-0.5 text-sm font-bold text-water-600">&#10003;</span>
+                    <div>
+                      <p className="text-[15px] font-semibold text-navy-950">{label}</p>
+                      {description && <p className="mt-1 text-sm leading-6 text-grey-500">{description}</p>}
+                    </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          )}
         </section>
       )}
-
-      {product.applications.length > 0 && (
-        <section className="mt-12 border-t border-grey-200 pt-8 lg:mt-14 lg:pt-9">
-          <SectionHeading title="Application Scenarios" />
-          <div className="mt-7 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {product.applications.map((app) => (
-              <ProductInfoCard key={app.title} title={app.title} description={app.description} />
-            ))}
-          </div>
-        </section>
-      )}
-
-      {hasDescription && (
-        <section id="description" className="mt-12 scroll-mt-24 border-t border-grey-200 pt-8 lg:mt-14 lg:pt-9">
-          <SectionHeading title="Product Description" />
-          <div
-            className="prose prose-sm mt-6 max-w-none text-grey-700"
-            dangerouslySetInnerHTML={{ __html: product.description }}
-          />
-        </section>
-      )}
-
-      <ProductBuyerChecklist product={product} />
-      <ProductEvidenceLinks />
 
       <RelatedProducts products={related} />
 

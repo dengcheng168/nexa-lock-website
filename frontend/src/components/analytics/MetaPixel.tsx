@@ -9,7 +9,7 @@ export function MetaPixel({ pixelId }: { pixelId: string }) {
        * This is intentionally afterInteractive instead of lazyOnload. With an
        * inline Next Script, lazyOnload can leave the script element in the DOM
        * after load without executing its contents. That leaves window.fbq
-       * undefined and irretrievably drops the first PageView/ViewContent.
+       * undefined and irretrievably drops the first PageView/ProductDetailView.
        */}
       <Script id="meta-pixel" strategy="afterInteractive">
         {buildMetaPixelBootstrap(pixelId)}

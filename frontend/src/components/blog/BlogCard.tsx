@@ -15,21 +15,26 @@ function formatDate(dateStr: string | null, locale: Locale) {
 
 export function BlogCard({ post, locale = 'en' }: { post: BlogPost; locale?: Locale }) {
   const hrefLocale = locale === 'es' && post.hasLocaleTranslation === false ? 'en' : locale;
+  const fallbackImages = [
+    '/images/smart-lock/category-residential.png',
+    '/images/smart-lock/category-hospitality.png',
+    '/images/smart-lock/category-glass.png',
+  ];
+  const coverImage = post.coverImage || fallbackImages[Math.abs(post.id) % fallbackImages.length];
   return (
     <Link
       href={localeHref(`/blog/${post.slug}`, hrefLocale)}
-      className="group flex flex-col overflow-hidden rounded-lg border border-grey-200 bg-white transition-shadow hover:shadow-lg"
+      className="group flex flex-col overflow-hidden border border-grey-200 bg-white transition-colors hover:border-water-500"
     >
-      <div className="relative aspect-[16/9] w-full overflow-hidden bg-grey-50">
-        {post.coverImage && (
-          <Image
-            src={post.coverImage}
-            alt={post.title}
-            fill
-            sizes="(min-width: 1024px) 33vw, 100vw"
-            className="object-cover transition-transform duration-300 group-hover:scale-105"
-          />
-        )}
+      <div className="relative aspect-[16/9] w-full overflow-hidden bg-navy-950">
+        <Image
+          src={coverImage}
+          alt={post.coverImage ? post.title : ''}
+          fill
+          sizes="(min-width: 1024px) 33vw, 100vw"
+          className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+        />
+        {!post.coverImage && <span className="absolute inset-0 bg-navy-950/10" />}
       </div>
       <div className="flex flex-1 flex-col p-5">
         {post.category && (
@@ -37,7 +42,10 @@ export function BlogCard({ post, locale = 'en' }: { post: BlogPost; locale?: Loc
         )}
         <h3 className="mt-1 line-clamp-2 min-h-[2.75rem] text-base font-semibold leading-snug text-navy-950">{post.title}</h3>
         {post.excerpt && <p className="mt-2 line-clamp-2 text-sm text-grey-500">{post.excerpt}</p>}
-        <p className="mt-3 text-xs text-grey-500">{formatDate(post.publishedAt, locale)}</p>
+        <div className="mt-auto flex items-center justify-between pt-5 text-xs text-grey-500">
+          <span>{formatDate(post.publishedAt, locale)}</span>
+          <span className="text-base text-water-600" aria-hidden="true">↗</span>
+        </div>
       </div>
     </Link>
   );

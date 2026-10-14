@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { productJsonLd, articleJsonLd, faqPageJsonLd, websiteJsonLd, breadcrumbListJsonLd, organizationJsonLd, certificateItemListJsonLd, aboutPageJsonLd } from './jsonld';
+import { productJsonLd, productCollectionJsonLd, collectionPageJsonLd, articleJsonLd, faqPageJsonLd, websiteJsonLd, breadcrumbListJsonLd, organizationJsonLd, certificateItemListJsonLd, aboutPageJsonLd, webPageJsonLd } from './jsonld';
 import type { Product } from '@/types/product';
 import type { BlogPost } from '@/types/blog';
 import type { Faq } from '@/types/content';
@@ -51,6 +51,57 @@ const post: BlogPost = {
 };
 
 const faqs: Faq[] = [{ id: 1, question: 'What is RO?', answer: 'Reverse osmosis.', category: null }];
+
+test('productCollectionJsonLd exposes the visible catalog as a localized ItemList', () => {
+  const result = productCollectionJsonLd([product], 'https://koigatetech.com', 'es');
+
+  assert.equal(result['@type'], 'CollectionPage');
+  assert.equal(result.url, 'https://koigatetech.com/es/products');
+  assert.equal(result.inLanguage, 'es');
+  assert.equal(result.mainEntity.numberOfItems, 1);
+  assert.deepEqual(result.mainEntity.itemListElement, [{
+    '@type': 'ListItem',
+    position: 1,
+    name: 'RO-500',
+    url: 'https://koigatetech.com/es/products/ro-500',
+  }]);
+});
+
+test('collectionPageJsonLd connects a category with its visible product items', () => {
+  const result = collectionPageJsonLd({
+    name: 'RO Systems',
+    description: 'Reverse osmosis systems.',
+    url: 'https://koigatetech.com/products/category/ro-systems',
+    itemCount: 2,
+    items: [
+      { name: 'RO-500', url: 'https://koigatetech.com/products/ro-500' },
+      { name: 'RO-800', url: 'https://koigatetech.com/products/ro-800' },
+    ],
+    breadcrumbs: [
+      { name: 'Home', url: 'https://koigatetech.com' },
+      { name: 'RO Systems', url: 'https://koigatetech.com/products/category/ro-systems' },
+    ],
+  });
+
+  const collection = result['@graph'][0]!;
+  const mainEntity = 'mainEntity' in collection ? collection.mainEntity : undefined;
+  assert.ok(mainEntity);
+  assert.equal(mainEntity.numberOfItems, 2);
+  assert.deepEqual(mainEntity.itemListElement, [
+    {
+      '@type': 'ListItem',
+      position: 1,
+      name: 'RO-500',
+      url: 'https://koigatetech.com/products/ro-500',
+    },
+    {
+      '@type': 'ListItem',
+      position: 2,
+      name: 'RO-800',
+      url: 'https://koigatetech.com/products/ro-800',
+    },
+  ]);
+});
 
 const settings: PublicSiteSettings = {
   companyName: 'Li-Men',
@@ -111,7 +162,7 @@ test('productJsonLd: uses the runtime site URL passed in, not a hardcoded value'
   assert.equal(result.url, 'https://koigatetech.com/products/ro-500');
 });
 
-test('productJsonLd: describes the quote-request page without invalid Product rich-result markup', () => {
+test('productJsonLd: describes a B2B quote-request page without entering Product rich results', () => {
   const result = productJsonLd({
     ...product,
     galleryImages: [
@@ -120,10 +171,13 @@ test('productJsonLd: describes the quote-request page without invalid Product ri
     ],
   }, PROD_SITE_URL);
   assert.equal(result['@type'], 'WebPage');
+  assert.equal(result['@id'], 'https://koigatetech.com/products/ro-500#webpage');
   assert.deepEqual(result.primaryImageOfPage, {
     '@type': 'ImageObject',
     url: 'https://koigatetech.com/uploads/ro-500.webp',
   });
+  assert.deepEqual(result.isPartOf, { '@id': 'https://koigatetech.com/#website' });
+  assert.deepEqual(result.about, { '@id': 'https://koigatetech.com/#organization' });
 });
 
 test('productJsonLd: does not claim an offer or rating that is absent from the page', () => {
@@ -146,6 +200,19 @@ test('productJsonLd: does not claim an offer or rating that is absent from the p
   assert.equal('offers' in result, false);
   assert.equal('review' in result, false);
   assert.equal('aggregateRating' in result, false);
+});
+
+test('productJsonLd: does not expose Product-only specification properties', () => {
+  const result = productJsonLd({
+    ...product,
+    specs: [
+      { label: 'Rated flow', value: '500 GPD' },
+      { label: 'Voltage', value: '220 V' },
+      { label: ' ', value: 'ignored' },
+    ],
+  }, PROD_SITE_URL);
+
+  assert.equal('additionalProperty' in result, false);
 });
 
 test('certificateItemListJsonLd omits unverified scope and exposes verified scope only when present', () => {
@@ -199,11 +266,15 @@ test('faqPageJsonLd: maps each faq to a Question/Answer pair', () => {
 
 test('websiteJsonLd: url points at the localized homepage', () => {
   assert.equal(websiteJsonLd(settings, SITE_URL, 'es').url, 'http://localhost:3000/es');
-  assert.equal(websiteJsonLd(settings, SITE_URL, 'en').url, 'http://localhost:3000/');
+  assert.equal(websiteJsonLd(settings, SITE_URL, 'en').url, 'http://localhost:3000');
 });
 
 test('websiteJsonLd: uses the runtime site URL passed in, not a hardcoded value', () => {
-  assert.equal(websiteJsonLd(settings, PROD_SITE_URL, 'en').url, 'https://koigatetech.com/');
+  assert.equal(websiteJsonLd(settings, PROD_SITE_URL, 'en').url, 'https://koigatetech.com');
+});
+
+test('organizationJsonLd: homepage URL matches the bare-origin canonical', () => {
+  assert.equal(organizationJsonLd(settings, PROD_SITE_URL).url, 'https://koigatetech.com');
 });
 
 test('aboutPageJsonLd: links localized about pages to the canonical organization entity', () => {
@@ -279,6 +350,27 @@ test('breadcrumbListJsonLd: resolves each item href against the runtime site URL
   const result = breadcrumbListJsonLd([{ label: 'Home', href: '/' }, { label: 'Products', href: '/products' }], PROD_SITE_URL);
   assert.equal(result.itemListElement[0]!.item, 'https://koigatetech.com/');
   assert.equal(result.itemListElement[1]!.item, 'https://koigatetech.com/products');
+});
+
+test('webPageJsonLd: keeps the live static-page compatibility export', () => {
+  const result = webPageJsonLd({
+    type: 'ContactPage',
+    name: 'Contact Li-Men',
+    description: 'Request a quotation.',
+    url: 'https://koigatetech.com/contact',
+    breadcrumbs: [
+      { name: 'Home', url: 'https://koigatetech.com' },
+      { name: 'Contact', url: 'https://koigatetech.com/contact' },
+    ],
+  });
+  assert.equal(result['@graph'][0]!['@type'], 'ContactPage');
+  const breadcrumbGraph = result['@graph'][1];
+  assert.equal(
+    'itemListElement' in breadcrumbGraph && breadcrumbGraph.itemListElement
+      ? breadcrumbGraph.itemListElement.length
+      : 0,
+    2,
+  );
 });
 
 test('productJsonLd: never produces a double slash between the domain and the path', () => {

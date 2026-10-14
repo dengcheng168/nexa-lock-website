@@ -61,6 +61,26 @@ const GUIDES = {
       ],
     },
   },
+  'commercial-ultrafiltration-water-purification-systems': {
+    en: {
+      title: 'How to Specify a Commercial Ultrafiltration System',
+      intro: 'Select a configuration from verified project requirements. Filter count alone does not determine whether a system fits the site.',
+      items: [
+        ['Flow and demand', 'Match the model-specific rated flow to peak demand, operating hours and simultaneous points of use.'],
+        ['Treatment train', 'Compare the documented filter stages and confirm whether the project requires UF only or a model with UV treatment.'],
+        ['Feed water and service', 'Confirm municipal feed-water conditions, installation space, cartridge supply and planned maintenance intervals.'],
+      ],
+    },
+    es: {
+      title: 'Cómo Especificar un Sistema Comercial de Ultrafiltración',
+      intro: 'Seleccione la configuración a partir de requisitos verificados; el número de etapas por sí solo no determina la idoneidad.',
+      items: [
+        ['Caudal y demanda', 'Compare el caudal nominal del modelo con la demanda máxima, las horas de uso y los puntos simultáneos.'],
+        ['Tren de tratamiento', 'Revise las etapas documentadas y confirme si el proyecto requiere solo UF o un modelo con tratamiento UV.'],
+        ['Agua y mantenimiento', 'Confirme el agua municipal, el espacio, el suministro de cartuchos y el mantenimiento previsto.'],
+      ],
+    },
+  },
 } as const;
 
 export function CategoryBuyerGuide({ slug, locale = 'en' }: { slug: string; locale?: Locale }) {
@@ -68,16 +88,31 @@ export function CategoryBuyerGuide({ slug, locale = 'en' }: { slug: string; loca
   if (!guide) return null;
 
   return (
-    <section className="mt-10 rounded-2xl border border-water-100 bg-water-50 p-6 sm:p-8">
-      <h2 className="text-xl font-semibold text-navy-950">{guide.title}</h2>
-      <p className="mt-3 max-w-3xl text-sm leading-6 text-grey-500">{guide.intro}</p>
-      <div className="mt-6 grid gap-5 md:grid-cols-3">
-        {guide.items.map(([title, description]) => (
-          <div key={title} className="rounded-lg bg-white p-5 shadow-sm">
-            <h3 className="font-semibold text-navy-950">{title}</h3>
-            <p className="mt-2 text-sm leading-6 text-grey-500">{description}</p>
-          </div>
-        ))}
+    <section className="mt-10 overflow-hidden rounded-2xl border border-grey-200 bg-white">
+      <div className="h-1 bg-gradient-to-r from-water-500 via-water-300 to-transparent" />
+      <div className="mx-auto max-w-6xl px-6 py-8 sm:px-10 sm:py-10">
+        <div className="max-w-3xl">
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-water-600">
+            {locale === 'es' ? 'Guía para compradores' : 'Buyer guide'}
+          </p>
+          <h2 className="mt-2 text-2xl font-semibold tracking-tight text-navy-950">{guide.title}</h2>
+          <p className="mt-3 text-sm leading-6 text-grey-500 sm:text-base">{guide.intro}</p>
+        </div>
+
+        <div className="mt-8 grid gap-4 md:grid-cols-3">
+          {guide.items.map(([title, description], index) => (
+            <article
+              key={title}
+              className="relative rounded-xl border border-grey-200 bg-grey-50/60 px-5 pb-5 pt-6 transition-colors hover:border-water-200 hover:bg-water-50/50 sm:px-6"
+            >
+              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-water-100 text-xs font-bold text-water-700">
+                {String(index + 1).padStart(2, '0')}
+              </span>
+              <h3 className="mt-4 text-base font-semibold leading-6 text-navy-950">{title}</h3>
+              <p className="mt-2 text-sm leading-6 text-grey-500">{description}</p>
+            </article>
+          ))}
+        </div>
       </div>
     </section>
   );

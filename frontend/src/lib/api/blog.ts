@@ -19,7 +19,10 @@ const CATEGORY_TRANSLATABLE_FIELDS: (keyof BlogCategory)[] = ['name', 'descripti
 
 export function localizePost(post: WithTranslation<BlogPost>): BlogPost {
   const { translation, ...base } = post;
-  return resolveLocalizedEntity(base as BlogPost, translation, POST_TRANSLATABLE_FIELDS);
+  return {
+    ...resolveLocalizedEntity(base as BlogPost, translation, POST_TRANSLATABLE_FIELDS),
+    localizedUpdatedAt: translation?.updatedAt ?? base.updatedAt,
+  };
 }
 
 function localizeCategory(category: WithTranslation<BlogCategory>): BlogCategory {

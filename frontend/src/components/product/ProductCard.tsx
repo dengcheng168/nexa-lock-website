@@ -9,7 +9,7 @@ export function ProductCard({ product, locale = 'en' }: { product: Product; loca
   return (
     <Link
       href={localeHref(`/products/${product.slug}`, locale)}
-      className="group flex flex-col overflow-hidden rounded-lg border border-grey-200 bg-white transition-shadow hover:shadow-lg"
+      className="group flex flex-col overflow-hidden rounded-xl border border-grey-200 bg-white transition-[border-color,transform] hover:-translate-y-1 hover:border-water-500"
     >
       <div className="relative aspect-square w-full min-w-0 overflow-hidden bg-grey-50">
         <Image
@@ -20,9 +20,9 @@ export function ProductCard({ product, locale = 'en' }: { product: Product; loca
           className="object-contain transition-transform duration-300 group-hover:scale-105"
         />
       </div>
-      <div className="flex flex-1 flex-col p-4">
+      <div className="flex flex-1 flex-col border-t border-grey-100 p-5">
         {product.category && (
-          <span className="block truncate text-xs font-medium uppercase tracking-wide text-water-600">
+          <span className="block truncate text-xs font-medium text-water-600">
             {product.category.name}
           </span>
         )}

@@ -6,12 +6,17 @@ import { JsonLd } from '@/components/seo/JsonLd';
 import { listFaqs } from '@/lib/api/content';
 import { faqPageJsonLd } from '@/lib/seo/jsonld';
 import { t } from '@/lib/i18n/site-strings';
+import { getDefaultSocialImages } from '@/lib/seo/base-metadata';
 
-export const metadata: Metadata = {
-  title: 'Preguntas sobre Purificadores de Agua y OEM/ODM',
-  description: 'Respuestas sobre purificadores de agua Li-Men, personalización OEM/ODM, pedidos mínimos, control de calidad, certificados, plazos y envíos.',
-  alternates: { canonical: '/es/faq', languages: { en: '/faq', es: '/es/faq', 'x-default': '/faq' } },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const images = await getDefaultSocialImages();
+  return {
+    title: 'Preguntas sobre Purificadores de Agua y OEM/ODM',
+    description: 'Respuestas sobre purificadores de agua Li-Men, personalización OEM/ODM, pedidos mínimos, control de calidad, certificados, plazos y envíos.',
+    alternates: { canonical: '/es/faq', languages: { en: '/faq', es: '/es/faq', 'x-default': '/faq' } },
+    openGraph: { type: 'website', url: '/es/faq', images },
+  };
+}
 
 export default async function SpanishFaqPage() {
   const faqs = await listFaqs('es');

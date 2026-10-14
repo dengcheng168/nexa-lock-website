@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import type { ProductImage } from '@/types/product';
 import { toThumbnailUrl } from '@/lib/media/thumbnail';
+import { getYoutubeEmbedUrl } from '@/lib/utils/youtube';
+import { resolveMediaUrl } from '@/lib/utils/media';
 
 function imageAlt(alt: string | undefined, productName: string) {
   return alt?.trim() || productName;
@@ -37,22 +39,28 @@ function ZoomIcon() {
 
 export function ProductGallery({
   mainImage,
+  videoUrl,
   images,
   name,
 }: {
   mainImage: string;
+  videoUrl?: string | null;
   images: ProductImage[];
   name: string;
 }) {
   const allImages: ProductImage[] = [{ url: mainImage, alt: name }, ...images];
+  const youtubeEmbedUrl = getYoutubeEmbedUrl(videoUrl);
+  const slides = videoUrl
+    ? [{ type: 'video' as const, url: videoUrl }, ...allImages.map((image) => ({ type: 'image' as const, image }))]
+    : allImages.map((image) => ({ type: 'image' as const, image }));
   const [active, setActive] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
-  const hasMultiple = allImages.length > 1;
+  const hasMultiple = slides.length > 1;
   const thumbListRef = useRef<HTMLDivElement>(null);
   const thumbRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
   function goTo(delta: number) {
-    setActive((prev) => (prev + delta + allImages.length) % allImages.length);
+    setActive((prev) => (prev + delta + slides.length) % slides.length);
   }
 
   useEffect(() => {
@@ -79,7 +87,8 @@ export function ProductGallery({
       active === i ? 'border-water-500' : 'border-grey-200 hover:border-grey-300'
     }`;
 
-  const current = allImages[active] ?? allImages[0]!;
+  const current = slides[active] ?? slides[0]!;
+  const currentImage = current.type === 'image' ? current.image : null;
   const navButtons = hasMultiple ? (
     <>
       <button
@@ -107,6 +116,10 @@ export function ProductGallery({
   // 完整显示（留白，不裁切），不会被拉伸变形。
   const stageClasses =
     'relative aspect-square w-full max-w-full min-w-0 overflow-hidden rounded-lg border border-grey-200 bg-white';
+  // 视频按常见原始画幅展示，而不是塞进产品图的 1:1 容器。object-contain 保证横屏
+  // 16:9 与竖屏 9:16 素材都完整可见；不裁切、不拉伸，剩余区域统一使用黑色衬底。
+  const videoStageClasses =
+    'relative aspect-video w-full max-w-full min-w-0 overflow-hidden rounded-lg border border-grey-200 !bg-black';
 
   return (
     <div className="min-w-0 lg:flex lg:items-start lg:gap-4">
@@ -121,19 +134,25 @@ export function ProductGallery({
             <ChevronUpIcon />
           </button>
           <div ref={thumbListRef} className="flex max-h-[420px] w-full flex-col gap-2.5 overflow-y-auto">
-            {allImages.map((img, i) => (
+            {slides.map((slide, i) => (
               <button
-                key={`${img.url}-${i}`}
+                key={`${slide.type === 'video' ? slide.url : slide.image.url}-${i}`}
                 type="button"
                 ref={(el) => {
                   thumbRefs.current[i] = el;
                 }}
                 onClick={() => setActive(i)}
-                aria-label={`${name} image ${i + 1}`}
+                aria-label={slide.type === 'video' ? `${name} video` : `${name} image ${i + 1}`}
                 aria-current={active === i ? 'true' : undefined}
                 className={thumbButtonClasses(i)}
               >
-                <Image src={toThumbnailUrl(img.url)} alt={imageAlt(img.alt, name)} fill sizes="84px" className="object-cover" />
+                {slide.type === 'video' ? (
+                  <span className="absolute inset-0 flex items-center justify-center bg-navy-950 text-white">
+                    <span className="ml-0.5 text-xl">&#9654;</span>
+                  </span>
+                ) : (
+                  <Image src={toThumbnailUrl(slide.image.url)} alt={imageAlt(slide.image.alt, name)} fill sizes="84px" className="object-cover" />
+                )}
               </button>
             ))}
           </div>
@@ -149,7 +168,28 @@ export function ProductGallery({
       )}
 
       <div className="min-w-0 lg:flex-1">
-        {current?.mobileUrl ? (
+        {current.type === 'video' ? (
+          <div className={videoStageClasses}>
+            {youtubeEmbedUrl ? (
+              <iframe
+                src={`${youtubeEmbedUrl}?rel=0`}
+                title={`${name} video`}
+                className="absolute inset-0 h-full w-full bg-black"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowFullScreen
+              />
+            ) : (
+              <video
+                src={resolveMediaUrl(current.url)}
+                className="absolute inset-0 h-full w-full bg-black object-contain"
+                controls
+                playsInline
+                preload="metadata"
+              />
+            )}
+            {navButtons}
+          </div>
+        ) : currentImage?.mobileUrl ? (
           <>
             {/*
               该图配置了手机端专用版本（mobileUrl）：两套 <Image> 都会被渲染，用 sm 断点
@@ -163,7 +203,7 @@ export function ProductGallery({
               aria-label={`${name} — tap to view full image`}
               className={`${stageClasses} block cursor-zoom-in sm:hidden`}
             >
-              <Image src={current.mobileUrl} alt={imageAlt(current.alt, name)} fill sizes="100vw" className="object-contain" priority />
+              <Image src={currentImage.mobileUrl} alt={imageAlt(currentImage.alt, name)} fill sizes="100vw" className="object-contain" priority />
               <span className="pointer-events-none absolute bottom-2 right-2 flex h-8 w-8 items-center justify-center rounded-full bg-white/85 text-navy-950 shadow">
                 <ZoomIcon />
               </span>
@@ -177,8 +217,8 @@ export function ProductGallery({
                 className="absolute inset-0 cursor-zoom-in"
               >
                 <Image
-                  src={current.url}
-                  alt={imageAlt(current.alt, name)}
+                  src={currentImage.url}
+                  alt={imageAlt(currentImage.alt, name)}
                   fill
                   sizes="(min-width: 1024px) 35vw, 100vw"
                   className="object-contain"
@@ -200,8 +240,8 @@ export function ProductGallery({
               className="absolute inset-0 cursor-zoom-in"
             >
               <Image
-                src={current?.url ?? mainImage}
-                alt={imageAlt(current?.alt, name)}
+                src={currentImage?.url ?? mainImage}
+                alt={imageAlt(currentImage?.alt, name)}
                 fill
                 sizes="(min-width: 1024px) 35vw, 100vw"
                 className="object-contain"
@@ -217,25 +257,29 @@ export function ProductGallery({
 
         {hasMultiple && (
           <div className="mt-3 flex gap-2.5 overflow-x-auto pb-1 lg:hidden" aria-label="Product thumbnails">
-            {allImages.map((img, i) => (
+            {slides.map((slide, i) => (
               <button
-                key={`${img.url}-${i}`}
+                key={`${slide.type === 'video' ? slide.url : slide.image.url}-${i}`}
                 type="button"
                 onClick={() => setActive(i)}
-                aria-label={`${name} image ${i + 1}`}
+                aria-label={slide.type === 'video' ? `${name} video` : `${name} image ${i + 1}`}
                 aria-current={active === i ? 'true' : undefined}
                 className={`relative h-16 w-16 shrink-0 overflow-hidden rounded-md border-2 transition-colors ${
                   active === i ? 'border-water-500' : 'border-grey-200 hover:border-grey-300'
                 }`}
               >
-                <Image src={toThumbnailUrl(img.url)} alt={imageAlt(img.alt, name)} fill sizes="64px" className="object-cover" />
+                {slide.type === 'video' ? (
+                  <span className="absolute inset-0 flex items-center justify-center bg-navy-950 text-white">&#9654;</span>
+                ) : (
+                  <Image src={toThumbnailUrl(slide.image.url)} alt={imageAlt(slide.image.alt, name)} fill sizes="64px" className="object-cover" />
+                )}
               </button>
             ))}
           </div>
         )}
       </div>
 
-      {lightboxOpen && (
+      {lightboxOpen && currentImage && (
         <div
           role="dialog"
           aria-modal="true"
@@ -258,8 +302,8 @@ export function ProductGallery({
             onClick={(e) => e.stopPropagation()}
           >
             <Image
-              src={current.url}
-              alt={imageAlt(current.alt, name)}
+              src={currentImage.url}
+              alt={imageAlt(currentImage.alt, name)}
               fill
               sizes="90vw"
               className="object-contain"

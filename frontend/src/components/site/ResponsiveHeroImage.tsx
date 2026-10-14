@@ -1,7 +1,15 @@
 /** A single picture lets the browser select the correct device image before
  * downloading. CSS-hidden eager images would download both versions.
  */
-export function ResponsiveHeroImage({ desktop, mobile }: { desktop?: string | null; mobile?: string | null }) {
+export function ResponsiveHeroImage({
+  desktop,
+  mobile,
+  className = '',
+}: {
+  desktop?: string | null;
+  mobile?: string | null;
+  className?: string;
+}) {
   const fallback = desktop || mobile;
   if (!fallback) return null;
   return <>
@@ -17,7 +25,7 @@ export function ResponsiveHeroImage({ desktop, mobile }: { desktop?: string | nu
         loading="eager"
         decoding="async"
         fetchPriority="high"
-        className="absolute inset-0 h-full w-full object-cover"
+        className={`absolute inset-0 h-full w-full object-cover ${className}`}
       />
     </picture>
   </>;

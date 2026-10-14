@@ -3,12 +3,16 @@ import { Container } from '@/components/ui/Container';
 import { Breadcrumbs } from '@/components/ui/Breadcrumbs';
 import { CategoryFilterSidebar } from '@/components/product/CategoryFilterSidebar';
 import { ProductGrid } from '@/components/product/ProductGrid';
+import { JsonLd } from '@/components/seo/JsonLd';
 import { Pagination } from '@/components/ui/Pagination';
 import { PageHeroBanner } from '@/components/site/PageHeroBanner';
-import { listProducts, listVisibleProductCategories } from '@/lib/api/products';
+import { listAllProducts, listProducts, listVisibleProductCategories } from '@/lib/api/products';
 import { getPageBySlug } from '@/lib/api/content';
 import { t } from '@/lib/i18n/site-strings';
 import { paginatedDescription, paginatedPath, paginatedTitle } from '@/lib/seo/pagination';
+import { productCollectionJsonLd } from '@/lib/seo/jsonld';
+import { getSiteUrl } from '@/lib/seo/site';
+import { getDefaultSocialImages } from '@/lib/seo/base-metadata';
 
 export async function generateMetadata({
   searchParams,
@@ -16,7 +20,7 @@ export async function generateMetadata({
   searchParams: Promise<{ page?: string }>;
 }): Promise<Metadata> {
   const { page: pageParam } = await searchParams;
-  const page = await getPageBySlug('products', 'es');
+  const [page, images] = await Promise.all([getPageBySlug('products', 'es'), getDefaultSocialImages()]);
   const enPath = paginatedPath('/products', pageParam);
   const esPath = paginatedPath('/es/products', pageParam);
   const baseTitle = page?.seoTitle ?? page?.title ?? t('es', 'productsPageTitle');
@@ -25,6 +29,7 @@ export async function generateMetadata({
     title: paginatedTitle(baseTitle, pageParam, 'es'),
     description: paginatedDescription(baseDescription, pageParam, 'es'),
     alternates: { canonical: esPath, languages: { en: enPath, es: esPath, 'x-default': enPath } },
+    openGraph: { type: 'website', url: esPath, images },
   };
 }
 
@@ -36,15 +41,18 @@ export default async function SpanishProductsPage({
   const { page: pageParam } = await searchParams;
   const currentPage = Number(pageParam) || 1;
 
-  const [{ items, meta }, categories, pageContent] = await Promise.all([
+  const [{ items, meta }, categories, pageContent, allProducts, siteUrl] = await Promise.all([
     listProducts({ page: currentPage, pageSize: 12 }, 'es'),
     listVisibleProductCategories('es'),
     getPageBySlug('products', 'es'),
+    currentPage === 1 ? listAllProducts('es') : Promise.resolve([]),
+    currentPage === 1 ? getSiteUrl() : Promise.resolve(''),
   ]);
   const hasHero = Boolean(pageContent?.heroImage || pageContent?.heroImageMobile);
 
   return (
     <>
+      {currentPage === 1 && <JsonLd data={productCollectionJsonLd(allProducts, siteUrl, 'es')} />}
       {hasHero && (
         <PageHeroBanner image={pageContent?.heroImage} imageMobile={pageContent?.heroImageMobile} title={pageContent?.title ?? t('es', 'productsPageTitle')}>
           {pageContent?.bodyHtml && (

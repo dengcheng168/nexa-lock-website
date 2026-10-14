@@ -5,6 +5,7 @@ import {
   publicCreateHandler,
   adminListHandler,
   adminDetailHandler,
+  adminMetaEventLogsHandler,
   adminUpdateHandler,
   adminDeleteHandler,
   adminExportCsvHandler,
@@ -35,6 +36,7 @@ export async function adminInquiryRoutes(app: FastifyInstance) {
   app.get('/inquiries/sources', adminSourceStatsHandler);
   app.get('/inquiries/exports', adminExportLogsHandler);
   app.get('/inquiries', adminListHandler);
+  app.get('/inquiries/:id/meta-events', adminMetaEventLogsHandler);
   app.get('/inquiries/:id', adminDetailHandler);
   app.patch('/inquiries/:id', adminUpdateHandler);
   app.delete('/inquiries/:id', adminDeleteHandler);

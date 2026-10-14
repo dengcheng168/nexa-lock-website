@@ -1,7 +1,23 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { getBlogPostBySlug } from './blog';
+import { getBlogPostBySlug, localizePost } from './blog';
 import { ApiError } from './client';
+
+test('localized post keeps the translation timestamp for sitemap lastmod', () => {
+  const post = {
+    id: 1,
+    title: 'English title',
+    updatedAt: '2026-09-01T00:00:00.000Z',
+    translation: {
+      title: 'Título en español',
+      updatedAt: '2026-10-11T00:00:00.000Z',
+    },
+  } as Parameters<typeof localizePost>[0];
+
+  const localized = localizePost(post);
+  assert.equal(localized.title, 'Título en español');
+  assert.equal(localized.localizedUpdatedAt, '2026-10-11T00:00:00.000Z');
+});
 
 test('only an upstream 404 is treated as a missing blog post', async (t) => {
   let status = 404;

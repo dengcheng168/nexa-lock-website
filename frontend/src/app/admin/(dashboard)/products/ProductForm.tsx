@@ -3,6 +3,7 @@
 import { useActionState, useState } from 'react';
 import { FormField, fieldInputClasses } from '@/components/admin/FormField';
 import { ImageUploader } from '@/components/admin/ImageUploader';
+import { VideoUploader } from '@/components/admin/VideoUploader';
 import { MultiImageUploader } from '@/components/admin/MultiImageUploader';
 import { TranslationMeta } from '@/components/admin/TranslationMeta';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/admin/ui/tabs';
@@ -22,6 +23,7 @@ interface FormValues {
   shortDescription?: string | null;
   description?: string;
   mainImage?: string;
+  videoUrl?: string | null;
   galleryImages?: { url: string; alt?: string; mobileUrl?: string }[];
   specs?: { label: string; value: string }[];
   features?: (string | { title: string; description?: string })[];
@@ -186,20 +188,21 @@ export function ProductForm({
 
       <ImageUploader
         name="mainImage"
-        label="主图"
+        label="产品主图（上传实拍图）"
         defaultValue={initialValues?.mainImage}
-        recommendedSize="标准比例：1:1　推荐尺寸：1200×1200px　最低建议：1000×1000px。请使用清晰的产品图片，上传后系统会自动裁剪为标准画布，前台会根据电脑、平板和手机屏幕自动缩放，不会把页面撑宽。若是产品实拍照：建议干净背景、主体居中，四周留出适当空间，不要把产品贴到图片边缘。带文字的宣传/参数信息图也可以上传（前台完整缩放显示、不裁切，支持点击查看大图）"
+        recommendedSize="选择你拍摄的产品照片，建议使用 1:1 方图、1200×1200px；上传后可裁剪。"
         aspectRatio={1}
         minRecommendedSize={1000}
       />
+      <VideoUploader name="videoUrl" label="产品视频（可选）" defaultValue={initialValues?.videoUrl} />
       <MultiImageUploader
         name="galleryImages"
-        label="详情图片（多张）"
+        label="产品相册（可上传多张实拍图）"
         defaultValue={initialValues?.galleryImages}
-        recommendedSize="标准比例：1:1　推荐尺寸：1200×1200px　最低建议：1000×1000px，可上传多张。适合上传产品不同角度、应用场景、安装方式、配件、卖点、参数信息图等。含文字的信息图也建议尽量按 1:1 设计；前台手机端会完整缩放显示，不会裁掉左右内容，也支持点击查看大图"
+        recommendedSize="可上传正面、侧面、细节、安装效果等多张照片；建议 1:1、1200×1200px。"
         aspectRatio={1}
         minRecommendedSize={1000}
-        mobileVariantHint="一般不需要——手机端前台已支持点击放大查看清晰原图。只有极少数图片需要跟桌面端完全不同的手机版内容时，才需要点「手机版」单独上传"
+        mobileVariantHint="通常不需要手机版图片，前台会自动适配屏幕。"
       />
 
       <FormField label="参数表" htmlFor="specsText" hint="每行一条，格式：标签: 值，例如 Daily Output: 50 GPD">

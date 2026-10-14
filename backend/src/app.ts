@@ -33,6 +33,7 @@ import { adminSystemRoutes } from './modules/system/system.routes.js';
 import { adminAuditRoutes } from './modules/audit/audit.routes.js';
 import { adminUserRoutes } from './modules/admin-users/admin-users.routes.js';
 import { publicPageViewRoutes, adminPageViewRoutes } from './modules/page-views/page-views.routes.js';
+import { publicMetaEventRoutes } from './modules/meta-events/meta-events.routes.js';
 import { env } from './config/env.js';
 
 export async function buildApp() {
@@ -82,6 +83,7 @@ export async function buildApp() {
   await app.register(publicRedirectRoutes, { prefix: API_PREFIX });
   await app.register(publicTranslationRoutes, { prefix: API_PREFIX });
   await app.register(publicPageViewRoutes, { prefix: API_PREFIX });
+  await app.register(publicMetaEventRoutes, { prefix: API_PREFIX });
 
   await app.register(adminCategoryRoutes, { prefix: ADMIN_API_PREFIX });
   await app.register(adminProductRoutes, { prefix: ADMIN_API_PREFIX });

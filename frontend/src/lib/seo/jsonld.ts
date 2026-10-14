@@ -31,7 +31,7 @@ export function organizationJsonLd(settings: PublicSiteSettings, siteUrl: string
     legalName: settings.companyName,
     alternateName: settings.brandName ?? undefined,
     description: settings.defaultSeoDescription ?? settings.footerCompanyIntro ?? undefined,
-    url: toAbsolute(siteUrl, '/'),
+    url: siteUrl,
     logo: settings.companyLogoUrl ? toAbsolute(siteUrl, settings.companyLogoUrl) : undefined,
     email: settings.companyEmail ?? undefined,
     telephone: settings.companyPhone ?? undefined,
@@ -56,13 +56,15 @@ export function organizationJsonLd(settings: PublicSiteSettings, siteUrl: string
 }
 
 export function websiteJsonLd(settings: PublicSiteSettings, siteUrl: string, locale: Locale = 'en') {
+  const homepageUrl = locale === 'en' ? siteUrl : toAbsolute(siteUrl, localeHref('/', locale));
   return {
     '@context': 'https://schema.org',
     '@type': 'WebSite',
     '@id': `${toAbsolute(siteUrl, localeHref('/', locale))}#website`,
     name: settings.companyName,
-    url: toAbsolute(siteUrl, localeHref('/', locale)),
+    url: homepageUrl,
     inLanguage: locale,
+    publisher: { '@id': toAbsolute(siteUrl, '/#organization') },
   };
 }
 
@@ -79,6 +81,28 @@ export function breadcrumbListJsonLd(items: { label: string; href: string }[], s
   };
 }
 
+/** Generic page graph used by the contact and legal pages on the live site. */
+export function webPageJsonLd({ type = 'WebPage', name, description, url, breadcrumbs }: {
+  type?: 'WebPage' | 'ContactPage';
+  name: string;
+  description: string;
+  url: string;
+  breadcrumbs: { name: string; url: string }[];
+}) {
+  return {
+    '@context': 'https://schema.org',
+    '@graph': [
+      { '@type': type, '@id': `${url}#webpage`, url, name, description },
+      {
+        '@type': 'BreadcrumbList',
+        itemListElement: breadcrumbs.map((item, index) => ({
+          '@type': 'ListItem', position: index + 1, name: item.name, item: item.url,
+        })),
+      },
+    ],
+  };
+}
+
 export function productJsonLd(
   product: Product,
   siteUrl: string,
@@ -89,22 +113,111 @@ export function productJsonLd(
     ...product.galleryImages.map((image) => image.url),
   ].filter(Boolean))].map((image) => toAbsolute(siteUrl, image));
 
+  const productUrl = toAbsolute(siteUrl, localeHref(`/products/${product.slug}`, locale));
+
   return {
     '@context': 'https://schema.org',
-    // These are quote-request pages: there is no public checkout price and no
-    // first-party review corpus. Publishing Product markup without a real
-    // offer/review makes the item invalid for Google's Product snippets. Keep
-    // accurate page-level metadata instead of manufacturing commercial data.
+    // The public page is a B2B specification and quote-request page. It has no
+    // public checkout price or first-party review corpus, so modelling it as a
+    // Product rich-result candidate would create an unresolvable GSC error.
     '@type': 'WebPage',
+    '@id': `${productUrl}#webpage`,
     name: product.name,
     description: product.shortDescription ?? product.seoDescription ?? undefined,
     primaryImageOfPage: images[0]
       ? { '@type': 'ImageObject', url: images[0] }
       : undefined,
-    url: toAbsolute(siteUrl, localeHref(`/products/${product.slug}`, locale)),
+    url: productUrl,
     inLanguage: locale,
+    isPartOf: { '@id': `${toAbsolute(siteUrl, localeHref('/', locale))}#website` },
+    about: { '@id': toAbsolute(siteUrl, '/#organization') },
   };
 }
+
+export function productCollectionJsonLd(
+  products: readonly Pick<Product, 'name' | 'slug'>[],
+  siteUrl: string,
+  locale: Locale = 'en',
+) {
+  const url = toAbsolute(siteUrl, localeHref('/products', locale));
+
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'CollectionPage',
+    '@id': `${url}#collection-page`,
+    url,
+    name: locale === 'es' ? 'Catálogo de purificadores de agua' : 'Water purifier product catalog',
+    description: locale === 'es'
+      ? 'Catálogo B2B de purificadores de agua y plataformas OEM/ODM para distribuidores, marcas y proyectos comerciales.'
+      : 'B2B catalog of water purifiers and OEM/ODM platforms for distributors, brands and commercial projects.',
+    inLanguage: locale,
+    isPartOf: { '@id': `${toAbsolute(siteUrl, localeHref('/', locale))}#website` },
+    mainEntity: {
+      '@type': 'ItemList',
+      numberOfItems: products.length,
+      itemListElement: products.map((product, index) => ({
+        '@type': 'ListItem',
+        position: index + 1,
+        name: product.name,
+        url: toAbsolute(siteUrl, localeHref(`/products/${product.slug}`, locale)),
+      })),
+    },
+  };
+}
+
+type CollectionPageJsonLdInput = {
+  name: string;
+  description: string;
+  url: string;
+  itemCount: number;
+  items?: readonly { name: string; url: string }[];
+  breadcrumbs: { name: string; url: string }[];
+};
+
+/** Compatibility helper used by the live blog and product-category templates. */
+export function collectionPageJsonLd({
+  name,
+  description,
+  url,
+  itemCount,
+  items = [],
+  breadcrumbs,
+}: CollectionPageJsonLdInput) {
+  return {
+    '@context': 'https://schema.org',
+    '@graph': [
+      {
+        '@type': 'CollectionPage',
+        '@id': `${url}#collection`,
+        url,
+        name,
+        description,
+        mainEntity: {
+          '@type': 'ItemList',
+          numberOfItems: itemCount,
+          itemListElement: items.map((item, index) => ({
+            '@type': 'ListItem',
+            position: index + 1,
+            name: item.name,
+            url: item.url,
+          })),
+        },
+      },
+      {
+        '@type': 'BreadcrumbList',
+        itemListElement: breadcrumbs.map((item, index) => ({
+          '@type': 'ListItem',
+          position: index + 1,
+          name: item.name,
+          item: item.url,
+        })),
+      },
+    ],
+  };
+}
+
+// The production templates currently use this pluralized export name.
+export const collectionPagesJsonLd = collectionPageJsonLd;
 
 export function aboutPageJsonLd(
   settings: PublicSiteSettings,
@@ -130,6 +243,7 @@ export function articleJsonLd(post: BlogPost, siteUrl: string, locale: Locale = 
   return {
     '@context': 'https://schema.org',
     '@type': 'Article',
+    '@id': `${articleUrl}#article`,
     headline: post.title,
     description: post.excerpt ?? undefined,
     image: post.coverImage ? toAbsolute(siteUrl, post.coverImage) : undefined,
@@ -138,6 +252,8 @@ export function articleJsonLd(post: BlogPost, siteUrl: string, locale: Locale = 
     author: { '@type': 'Organization', name: post.authorName },
     url: articleUrl,
     mainEntityOfPage: { '@type': 'WebPage', '@id': articleUrl },
+    isPartOf: { '@id': `${toAbsolute(siteUrl, localeHref('/', locale))}#website` },
+    publisher: { '@id': toAbsolute(siteUrl, '/#organization') },
     inLanguage: locale,
   };
 }

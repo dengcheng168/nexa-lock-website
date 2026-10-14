@@ -7,9 +7,10 @@ import { PageHeroBanner } from '@/components/site/PageHeroBanner';
 import { getPageBySlug } from '@/lib/api/content';
 import { getPublicSettings } from '@/lib/api/settings';
 import { t } from '@/lib/i18n/site-strings';
+import { getDefaultSocialImages } from '@/lib/seo/base-metadata';
 
 export async function generateMetadata(): Promise<Metadata> {
-  const page = await getPageBySlug('contact', 'es');
+  const [page, images] = await Promise.all([getPageBySlug('contact', 'es'), getDefaultSocialImages()]);
   return {
     title: page?.seoTitle ?? page?.title ?? t('es', 'contactPageTitle'),
     description:
@@ -19,6 +20,7 @@ export async function generateMetadata(): Promise<Metadata> {
       canonical: '/es/contact',
       languages: { en: '/contact', es: '/es/contact', 'x-default': '/contact' },
     },
+    openGraph: { type: 'website', url: '/es/contact', images },
   };
 }
 

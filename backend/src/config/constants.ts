@@ -22,6 +22,9 @@ export const ALLOWED_UPLOAD_MIME_TYPES: Record<string, string> = {
   'image/webp': '.webp',
   'image/avif': '.avif',
   'image/svg+xml': '.svg',
+  'video/mp4': '.mp4',
+  'video/webm': '.webm',
+  'video/quicktime': '.mov',
   'application/pdf': '.pdf',
 };
 

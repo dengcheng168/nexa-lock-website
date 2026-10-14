@@ -3,7 +3,9 @@ const styles: Record<string, string> = {
   DRAFT: 'bg-grey-100 text-grey-700',
   NEW: 'bg-water-100 text-water-600',
   CONTACTED: 'bg-yellow-100 text-yellow-700',
+  QUALIFIED: 'bg-green-100 text-green-700',
   QUOTED: 'bg-purple-100 text-purple-700',
+  WON: 'bg-green-100 text-green-700',
   CLOSED: 'bg-grey-100 text-grey-700',
   SPAM: 'bg-red-100 text-red-700',
 };
@@ -13,7 +15,9 @@ const labels: Record<string, string> = {
   DRAFT: '草稿',
   NEW: '待处理',
   CONTACTED: '已联系',
+  QUALIFIED: '有效客户',
   QUOTED: '已报价',
+  WON: '已成交',
   CLOSED: '已关闭',
   SPAM: '垃圾询盘',
 };

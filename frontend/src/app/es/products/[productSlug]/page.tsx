@@ -12,7 +12,6 @@ import { ProductInfoCard } from '@/components/product/ProductInfoCard';
 import { RelatedProducts } from '@/components/product/RelatedProducts';
 import { ProductPrevNextNav } from '@/components/product/ProductPrevNextNav';
 import { ProductEvidenceLinks } from '@/components/product/ProductEvidenceLinks';
-import { ProductBuyerChecklist } from '@/components/product/ProductBuyerChecklist';
 import { InquiryForm } from '@/components/forms/InquiryForm';
 import { JsonLd } from '@/components/seo/JsonLd';
 import { SOCIAL_ICONS } from '@/components/layout/SocialIcons';
@@ -246,7 +245,6 @@ export default async function SpanishProductDetailPage({
         </section>
       )}
 
-      <ProductBuyerChecklist product={product} locale="es" />
       <ProductEvidenceLinks locale="es" />
 
       <RelatedProducts products={related} locale="es" />

@@ -12,6 +12,7 @@ import { Container } from '@/components/ui/Container';
 import { MobileNav } from './MobileNav';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { toThumbnailUrl } from '@/lib/media/thumbnail';
+import { ArrowUpRight, Fingerprint } from 'lucide-react';
 
 export async function Header({ locale = 'en' }: { locale?: Locale } = {}) {
   const [items, settings, translations] = await Promise.all([
@@ -26,14 +27,14 @@ export async function Header({ locale = 'en' }: { locale?: Locale } = {}) {
   const homeHref = localeHref('/', locale);
 
   return (
-    <header className="sticky top-0 z-50 bg-navy-950">
-      <Container className="relative flex h-16 items-center justify-between">
-        <Link href={homeHref} className="flex items-center gap-2 text-lg font-semibold text-white">
+    <header className="sticky top-0 z-50 border-b border-navy-950/10 bg-white/95 shadow-[0_8px_30px_rgba(8,34,65,0.06)] backdrop-blur-xl">
+      <Container className="relative flex h-[88px] items-center justify-between">
+        <Link href={homeHref} className="group flex items-center gap-3.5 text-navy-950">
           {settings.companyLogoUrl ? (
             <span className="relative block h-9 w-40">
               <Image
                 src={toThumbnailUrl(settings.companyLogoUrl)}
-                alt={settings.brandName || settings.companyName || 'Li-Men'}
+                alt={settings.brandName || settings.companyName || 'NEXA LOCK'}
                 fill
                 sizes="160px"
                 className="object-contain object-left"
@@ -41,17 +42,25 @@ export async function Header({ locale = 'en' }: { locale?: Locale } = {}) {
               />
             </span>
           ) : (
-            settings.brandName || settings.companyName || 'Li-Men'
+            <>
+              <span className="flex h-11 w-11 items-center justify-center bg-navy-950 text-white shadow-[0_8px_20px_rgba(8,34,65,0.18)] transition-colors group-hover:bg-water-600">
+                <Fingerprint className="h-6 w-6" strokeWidth={1.7} />
+              </span>
+              <span className="flex flex-col">
+                <span className="text-lg font-bold leading-none tracking-[-0.025em]">{settings.brandName || settings.companyName || 'NEXA LOCK'}</span>
+                <span className="mt-1.5 text-[10px] font-semibold tracking-[0.16em] text-water-600">Smart access systems</span>
+              </span>
+            </>
           )}
         </Link>
 
-        <nav className="hidden items-center gap-6 lg:flex">
+        <nav className="hidden items-center gap-1 rounded-full border border-navy-950/[0.06] bg-[#f3f7fb] p-1.5 lg:flex">
           {navItems.map((item) => (
             <Link
               key={item.id}
               href={item.url}
               target={item.openInNewTab ? '_blank' : undefined}
-              className="text-sm font-medium text-grey-200 transition-colors hover:text-white"
+              className="rounded-full px-3.5 py-2 text-sm font-medium text-grey-700 transition-colors hover:bg-white hover:text-navy-950 hover:shadow-sm"
             >
               {item.label}
             </Link>
@@ -59,9 +68,10 @@ export async function Header({ locale = 'en' }: { locale?: Locale } = {}) {
         </nav>
 
         <div className="hidden items-center gap-4 lg:ml-6 lg:flex">
-          <LanguageSwitcher locale={locale} />
-          <Button href={localeHref('/contact', locale)} className="!px-4 !py-2">
+          <LanguageSwitcher locale={locale} variant="light" />
+          <Button href={localeHref('/contact', locale)} className="group !gap-2 !px-5 !py-3 shadow-[0_8px_20px_rgba(47,128,237,0.22)]">
             {t(locale, 'headerCta')}
+            <ArrowUpRight className="h-4 w-4 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
           </Button>
         </div>
 

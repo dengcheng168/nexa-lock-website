@@ -3,16 +3,18 @@ import { Container } from '@/components/ui/Container';
 import { Breadcrumbs } from '@/components/ui/Breadcrumbs';
 import { BlogSidebar } from '@/components/blog/BlogSidebar';
 import { BlogCard } from '@/components/blog/BlogCard';
+import { BlogProjectCta } from '@/components/blog/BlogProjectCta';
 import { Pagination } from '@/components/ui/Pagination';
 import { PageHeroBanner } from '@/components/site/PageHeroBanner';
 import { listBlogPosts, listBlogCategories, listBlogTags } from '@/lib/api/blog';
 import { getPageBySlug } from '@/lib/api/content';
 import { t } from '@/lib/i18n/site-strings';
 import { paginatedDescription, paginatedPath, paginatedTitle } from '@/lib/seo/pagination';
+import { getDefaultSocialImages } from '@/lib/seo/base-metadata';
 
 export async function generateMetadata({ searchParams }: { searchParams: Promise<{ page?: string }> }): Promise<Metadata> {
   const { page: pageParam } = await searchParams;
-  const page = await getPageBySlug('blog', 'es');
+  const [page, images] = await Promise.all([getPageBySlug('blog', 'es'), getDefaultSocialImages()]);
   const baseTitle = page?.seoTitle ?? page?.title ?? t('es', 'blogPageTitle');
   const baseDescription = page?.seoDescription ?? t('es', 'blogPageDescription');
   const enPath = paginatedPath('/blog', pageParam);
@@ -21,6 +23,7 @@ export async function generateMetadata({ searchParams }: { searchParams: Promise
     title: paginatedTitle(baseTitle, pageParam, 'es'),
     description: paginatedDescription(baseDescription, pageParam, 'es'),
     alternates: { canonical: esPath, languages: { en: enPath, es: esPath, 'x-default': enPath } },
+    openGraph: { type: 'website', url: esPath, images },
   };
 }
 
@@ -83,6 +86,7 @@ export default async function SpanishBlogListPage({
           </div>
         </div>
       </Container>
+      <BlogProjectCta locale="es" />
     </>
   );
 }

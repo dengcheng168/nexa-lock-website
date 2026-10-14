@@ -5,10 +5,13 @@ import { Breadcrumbs } from '@/components/ui/Breadcrumbs';
 import { CategoryFilterSidebar } from '@/components/product/CategoryFilterSidebar';
 import { ProductGrid } from '@/components/product/ProductGrid';
 import { Pagination } from '@/components/ui/Pagination';
-import { CategoryBuyerGuide } from '@/components/product/CategoryBuyerGuide';
+import { JsonLd } from '@/components/seo/JsonLd';
 import { getProductCategoryBySlug, listVisibleProductCategories } from '@/lib/api/products';
 import { t } from '@/lib/i18n/site-strings';
+import { collectionPagesJsonLd } from '@/lib/seo/jsonld';
 import { paginatedDescription, paginatedPath, paginatedTitle } from '@/lib/seo/pagination';
+import { getSiteUrl } from '@/lib/seo/site';
+import { getDefaultSocialImages } from '@/lib/seo/base-metadata';
 
 export async function generateMetadata({
   params,
@@ -19,7 +22,10 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { categorySlug } = await params;
   const { page: pageParam } = await searchParams;
-  const result = await getProductCategoryBySlug(categorySlug, {}, 'es');
+  const [result, defaultImages] = await Promise.all([
+    getProductCategoryBySlug(categorySlug, {}, 'es'),
+    getDefaultSocialImages(),
+  ]);
   if (!result) return {};
   const enPath = paginatedPath(`/products/category/${categorySlug}`, pageParam);
   const esPath = paginatedPath(`/es/products/category/${categorySlug}`, pageParam);
@@ -35,6 +41,7 @@ export async function generateMetadata({
         'x-default': enPath,
       },
     },
+    openGraph: { type: 'website', url: esPath, images: result.category.image ? [result.category.image] : defaultImages },
     ...(result.products.length === 0 ? { robots: { index: false, follow: true } } : {}),
   };
 }
@@ -57,8 +64,30 @@ export default async function SpanishProductCategoryPage({
 
   if (!result) notFound();
 
+  const siteUrl = await getSiteUrl();
+  const categoryUrl = `${siteUrl}/es/products/category/${categorySlug}`;
+
   return (
     <Container className="py-12">
+      {page === 1 && (
+        <JsonLd
+          data={collectionPagesJsonLd({
+            name: result.category.name,
+            description: result.category.description ?? result.category.seoDescription ?? result.category.name,
+            url: categoryUrl,
+            itemCount: result.meta?.total ?? result.products.length,
+            items: result.products.map((product) => ({
+              name: product.name,
+              url: `${siteUrl}/es/products/${product.slug}`,
+            })),
+            breadcrumbs: [
+              { name: 'Inicio', url: `${siteUrl}/es` },
+              { name: 'Productos', url: `${siteUrl}/es/products` },
+              { name: result.category.name, url: categoryUrl },
+            ],
+          })}
+        />
+      )}
       <Breadcrumbs
         items={[
           { label: t('es', 'breadcrumbHome'), href: '/es' },
@@ -69,7 +98,6 @@ export default async function SpanishProductCategoryPage({
       />
       <h1 className="mt-4 text-3xl font-semibold text-navy-950">{result.category.name}</h1>
       {result.category.description && <p className="mt-3 max-w-2xl text-grey-500">{result.category.description}</p>}
-      <CategoryBuyerGuide slug={categorySlug} locale="es" />
 
       <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-[240px_1fr]">
         <aside>

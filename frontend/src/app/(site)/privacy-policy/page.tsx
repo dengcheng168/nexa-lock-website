@@ -2,9 +2,10 @@ import type { Metadata } from 'next';
 import { Container } from '@/components/ui/Container';
 import { Breadcrumbs } from '@/components/ui/Breadcrumbs';
 import { getPageBySlug } from '@/lib/api/content';
+import { getDefaultSocialImages } from '@/lib/seo/base-metadata';
 
 export async function generateMetadata(): Promise<Metadata> {
-  const page = await getPageBySlug('privacy-policy');
+  const [page, images] = await Promise.all([getPageBySlug('privacy-policy'), getDefaultSocialImages()]);
   return {
     title: page?.seoTitle ?? page?.title ?? 'Privacy Policy',
     description: page?.seoDescription || 'Read the privacy policy for the Koigatech website and contact inquiries.',
@@ -12,6 +13,7 @@ export async function generateMetadata(): Promise<Metadata> {
       canonical: '/privacy-policy',
       languages: { en: '/privacy-policy', es: '/es/privacy-policy', 'x-default': '/privacy-policy' },
     },
+    openGraph: { type: 'website', url: '/privacy-policy', images },
   };
 }
 

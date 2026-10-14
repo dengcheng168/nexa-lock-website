@@ -1,7 +1,23 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { getProductCategoryBySlug, getProductBySlug, listProducts } from './products';
+import { getProductCategoryBySlug, getProductBySlug, listProducts, localizeProduct } from './products';
 import { ApiError } from './client';
+
+test('localized product keeps the translation timestamp for sitemap lastmod', () => {
+  const product = {
+    id: 1,
+    name: 'English name',
+    updatedAt: '2026-09-01T00:00:00.000Z',
+    translation: {
+      name: 'Nombre en español',
+      updatedAt: '2026-10-10T00:00:00.000Z',
+    },
+  } as Parameters<typeof localizeProduct>[0];
+
+  const localized = localizeProduct(product);
+  assert.equal(localized.name, 'Nombre en español');
+  assert.equal(localized.localizedUpdatedAt, '2026-10-10T00:00:00.000Z');
+});
 
 test('only upstream 404 is treated as missing; rate limits and outages propagate in both languages', async (t) => {
   let status = 404;

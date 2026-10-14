@@ -19,7 +19,7 @@ export function MobileNav({ items, locale = 'en' }: { items: NavigationItem[]; l
         aria-label={open ? t(locale, 'closeMenuLabel') : t(locale, 'openMenuLabel')}
         aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
-        className="flex h-10 w-10 items-center justify-center rounded-md text-white hover:bg-white/10"
+        className="flex h-10 w-10 items-center justify-center rounded-md text-navy-950 hover:bg-grey-100"
       >
         {open ? (
           <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth={2}>
@@ -33,7 +33,7 @@ export function MobileNav({ items, locale = 'en' }: { items: NavigationItem[]; l
       </button>
 
       {open && (
-        <div className="absolute inset-x-0 top-16 z-40 border-t border-grey-200 bg-white shadow-lg animate-fade-in">
+        <div className="absolute inset-x-0 top-[88px] z-40 border-t border-grey-200 bg-white shadow-lg animate-fade-in">
           <nav className="flex flex-col px-4 py-3">
             {items.map((item) => (
               <Link

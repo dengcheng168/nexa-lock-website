@@ -11,16 +11,18 @@ import { JsonLd } from '@/components/seo/JsonLd';
 import { certificateItemListJsonLd } from '@/lib/seo/jsonld';
 import { getPublicSettings } from '@/lib/api/settings';
 import { getSiteUrl } from '@/lib/seo/site';
+import { getDefaultSocialImages } from '@/lib/seo/base-metadata';
 
 export async function generateMetadata(): Promise<Metadata> {
-  const page = await getPageBySlug('certificates');
+  const [page, images] = await Promise.all([getPageBySlug('certificates'), getDefaultSocialImages()]);
   return {
     title: page?.seoTitle ?? page?.title ?? 'Certificates',
-    description: page?.seoDescription ?? 'Quality and compliance certificates for our water purifier products.',
+    description: page?.seoDescription ?? 'Quality and compliance documents for our smart lock products.',
     alternates: {
       canonical: '/certificates',
       languages: { en: '/certificates', es: '/es/certificates', 'x-default': '/certificates' },
     },
+    openGraph: { type: 'website', url: '/certificates', images },
   };
 }
 
@@ -133,17 +135,22 @@ export default async function CertificatesPage() {
         )}
       </Container>
 
-      <section className="bg-navy-950 py-14">
-        <Container className="text-center">
-          <h2 className="text-2xl font-semibold text-white sm:text-3xl">{t('en', 'certCtaTitle')}</h2>
-          <p className="mx-auto mt-3 max-w-2xl text-grey-100/90">{t('en', 'certCtaDescription')}</p>
-          <div className="mt-8">
+      <section className="border-t border-grey-200 bg-[#f2f6fb] py-10 sm:py-12">
+        <Container className="grid items-center gap-8 lg:grid-cols-[1fr_auto] lg:gap-12">
+          <div className="border-l-4 border-water-500 pl-6 sm:pl-8">
+            <h2 className="text-2xl font-semibold text-navy-950 sm:text-3xl">
+              {t('en', 'certCtaTitle')}
+            </h2>
+            <p className="mt-3 max-w-3xl text-grey-600">{t('en', 'certCtaDescription')}</p>
+          </div>
+          <div className="pl-7 sm:pl-9 lg:pl-0">
             <Button href="/contact" variant="primary">
               {t('en', 'certCtaButton')}
             </Button>
           </div>
         </Container>
       </section>
+
     </>
   );
 }

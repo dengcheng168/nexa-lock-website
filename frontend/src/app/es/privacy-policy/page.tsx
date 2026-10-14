@@ -3,9 +3,10 @@ import { Container } from '@/components/ui/Container';
 import { Breadcrumbs } from '@/components/ui/Breadcrumbs';
 import { getPageBySlug } from '@/lib/api/content';
 import { t } from '@/lib/i18n/site-strings';
+import { getDefaultSocialImages } from '@/lib/seo/base-metadata';
 
 export async function generateMetadata(): Promise<Metadata> {
-  const page = await getPageBySlug('privacy-policy', 'es');
+  const [page, images] = await Promise.all([getPageBySlug('privacy-policy', 'es'), getDefaultSocialImages()]);
   return {
     title: page?.seoTitle ?? page?.title ?? t('es', 'privacyPolicyPageTitle'),
     description: page?.seoDescription || 'Consulta la política de privacidad del sitio web de Koigatech y de las consultas de contacto.',
@@ -13,6 +14,7 @@ export async function generateMetadata(): Promise<Metadata> {
       canonical: '/es/privacy-policy',
       languages: { en: '/privacy-policy', es: '/es/privacy-policy', 'x-default': '/privacy-policy' },
     },
+    openGraph: { type: 'website', url: '/es/privacy-policy', images },
   };
 }
 

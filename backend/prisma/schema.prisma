@@ -1,4 +1,4 @@
-// 净水器工厂官网 数据模型
+// 智能门锁品牌与工厂官网 数据模型（沿用成熟的产品、内容与询盘后台）
 // 说明：内容字段（name/description/title 等）均为英文文本，供英文前台展示；
 // 本文件本身及后台界面文案为中文，但不属于 Prisma schema 的一部分。
 // 数据库当前使用 SQLite，字段类型均选用 SQLite/PostgreSQL 通用类型，
@@ -19,7 +19,7 @@ datasource db {
 // AdminRole:     "SUPER_ADMIN" | "CONTENT_ADMIN" | "SALES"（原 "EDITOR" 已通过迁移改名为 "CONTENT_ADMIN"）
 // ProductStatus: "DRAFT" | "PUBLISHED"
 // PostStatus:    "DRAFT" | "PUBLISHED"
-// InquiryStatus: "NEW" | "CONTACTED" | "QUOTED" | "CLOSED" | "SPAM"
+// InquiryStatus: "NEW" | "CONTACTED" | "QUALIFIED" | "QUOTED" | "WON" | "CLOSED" | "SPAM"
 
 model AdminUser {
   id             Int        @id @default(autoincrement())
@@ -147,6 +147,7 @@ model Product {
   shortDescription String?
   description      String // 富文本 HTML，保存前会做 sanitize
   mainImage        String
+  videoUrl         String?
   galleryImages    String               @default("[]") // JSON 字符串：[{url, alt, mobileUrl}]，mobileUrl 可选（SQLite 无原生 Json 类型，应用层负责序列化）
   specs            String               @default("[]") // JSON 字符串：[{label, value}]
   features         String               @default("[]") // JSON 字符串：string[] 或 [{title, description}]
@@ -324,6 +325,10 @@ model Inquiry {
   adminNotes  String?
   ipAddress   String?
   userAgent   String?
+  // Preserve Meta browser identifiers so later CRM-stage CAPI events can be
+  // matched back to the same visitor instead of relying on email alone.
+  metaFbp     String?
+  metaFbc     String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -331,6 +336,10 @@ model Inquiry {
   @@index([createdAt])
   @@index([email])
   @@index([pageLanguage])
+  @@index([email, createdAt])
+  @@index([status, createdAt])
+  @@index([pageLanguage, createdAt])
+  @@index([sourcePage, createdAt])
   @@map("inquiries")
 }
 
@@ -568,8 +577,8 @@ model SiteSetting {
   // Google Search Console HTML 标签验证方式的 content 值（只存 content，不存完整 <meta> 标签），
   // 渲染时输出到 <head> 的 <meta name="google-site-verification">，见 lib/seo/base-metadata.ts
   googleSiteVerification String?
-  heroHeadline          String   @default("OEM & ODM Water Purifier Manufacturer")
-  heroSubheadline       String   @default("Reliable water purification solutions for global brands, distributors and commercial projects.")
+  heroHeadline          String   @default("Smart Access. Built Around You.")
+  heroSubheadline       String   @default("Connected smart locks for homes, apartments and hospitality projects — engineered for secure, effortless entry.")
   heroButton1Text       String   @default("Get a Quote")
   heroButton1Link       String   @default("/contact")
   heroButton2Text       String   @default("View Products")

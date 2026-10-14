@@ -1,24 +1,29 @@
 import type { Metadata } from 'next';
 import Image from 'next/image';
+import Link from 'next/link';
 import { Container } from '@/components/ui/Container';
 import { Breadcrumbs } from '@/components/ui/Breadcrumbs';
 import { InquiryForm } from '@/components/forms/InquiryForm';
 import { PageHeroBanner } from '@/components/site/PageHeroBanner';
 import { getPageBySlug } from '@/lib/api/content';
 import { getPublicSettings } from '@/lib/api/settings';
+import { getDefaultSocialImages } from '@/lib/seo/base-metadata';
+import { Clock3, Mail, MessageCircle, Phone, ShieldCheck } from 'lucide-react';
 
 export async function generateMetadata(): Promise<Metadata> {
-  const page = await getPageBySlug('contact');
+  const [page, images] = await Promise.all([getPageBySlug('contact'), getDefaultSocialImages()]);
   return {
     title: page?.seoTitle ?? page?.title ?? 'Contact Us',
     description: page?.seoDescription ?? undefined,
     alternates: { canonical: '/contact', languages: { en: '/contact', es: '/es/contact', 'x-default': '/contact' } },
+    openGraph: { type: 'website', url: '/contact', images },
   };
 }
 
 export default async function ContactPage() {
   const [page, settings] = await Promise.all([getPageBySlug('contact'), getPublicSettings()]);
   const hasHero = Boolean(page?.heroImage || page?.heroImageMobile);
+  const hasMeaningfulBody = Boolean(page?.bodyHtml && !/placeholder/i.test(page.bodyHtml));
 
   return (
     <>
@@ -39,69 +44,79 @@ export default async function ContactPage() {
         </PageHeroBanner>
       )}
 
-      <Container className="py-8 sm:py-12">
-        <Breadcrumbs items={[{ label: 'Home', href: '/' }, { label: 'Contact' }]} />
-        {!hasHero && (
-          <>
-            <h1 className="mt-4 text-3xl font-semibold text-navy-950">{page?.title ?? 'Contact Us'}</h1>
-            {page?.bodyHtml && (
-              <div
-                className="prose prose-sm mt-4 max-w-2xl text-grey-700"
-                dangerouslySetInnerHTML={{ __html: page.bodyHtml }}
-              />
-            )}
-          </>
-        )}
-
-        <div className="mt-6 grid gap-8 sm:mt-10 lg:grid-cols-[minmax(280px,0.82fr)_minmax(0,1.45fr)] lg:items-start lg:gap-12">
-          <aside className="order-2 space-y-5 text-sm lg:order-1 lg:sticky lg:top-24 lg:rounded-2xl lg:bg-navy-950 lg:p-8 lg:text-white lg:shadow-xl lg:shadow-navy-950/10">
-            <div className="hidden lg:block">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-water-300">Contact Li-Men</p>
-              <h2 className="mt-3 text-2xl font-semibold leading-tight text-white">Let&apos;s build your water purification project</h2>
-              <p className="mt-3 leading-6 text-grey-200">Speak directly with our OEM/ODM team about products, customization and quotations.</p>
+      {!hasHero && (
+        <section className="relative overflow-hidden bg-navy-950 text-white">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_78%_42%,rgba(44,161,219,.32),transparent_24%),radial-gradient(circle_at_86%_70%,rgba(255,255,255,.12),transparent_18%),linear-gradient(112deg,#061b36_0%,#0a2f56_56%,#0b4772_100%)]" />
+          <div className="absolute -right-16 top-1/2 h-72 w-72 -translate-y-1/2 rounded-full border border-white/15 sm:right-[8%] sm:h-96 sm:w-96" />
+          <div className="absolute -right-2 top-1/2 h-48 w-48 -translate-y-1/2 rounded-full border border-white/10 sm:right-[13%] sm:h-64 sm:w-64" />
+          <Container className="relative py-10 sm:py-14 lg:py-16">
+            <div className="text-sm text-grey-300"><Link href="/" className="hover:text-white">Home</Link><span className="mx-2">/</span>Contact</div>
+            <div className="mt-7 max-w-2xl">
+              <h1 className="text-4xl font-semibold leading-[1.08] tracking-[-0.035em] sm:text-5xl lg:text-[58px]">
+                Let&apos;s define your water purification project.
+              </h1>
+              {hasMeaningfulBody ? (
+                <div className="prose prose-sm prose-invert mt-5 max-w-xl text-grey-200" dangerouslySetInnerHTML={{ __html: page?.bodyHtml ?? '' }} />
+              ) : (
+                <p className="mt-5 max-w-xl text-base leading-7 text-grey-200 sm:text-lg">
+                  Tell us about your water source, target capacity and order quantity. Our OEM/ODM team will turn your requirements into a practical product proposal.
+                </p>
+              )}
             </div>
-            {settings.companyEmail && (
-              <div className="lg:border-t lg:border-white/15 lg:pt-5">
-                <div className="font-semibold text-navy-950 lg:text-white">Email</div>
-                <a href={`mailto:${settings.companyEmail}`} className="mt-1 block text-water-600 hover:underline lg:text-water-200">
-                  {settings.companyEmail}
+            <div className="mt-8 flex flex-wrap gap-x-8 gap-y-3 border-t border-white/15 pt-5 text-sm text-grey-200">
+              <span className="inline-flex items-center gap-2"><Clock3 className="h-4 w-4 text-water-300" />Reply within one business day</span>
+              <span className="inline-flex items-center gap-2"><ShieldCheck className="h-4 w-4 text-water-300" />Project details kept confidential</span>
+            </div>
+          </Container>
+        </section>
+      )}
+
+      <Container className={`${hasHero ? 'py-8 sm:py-12' : 'relative -mt-px py-0 pb-12 sm:pb-16'}`}>
+        {hasHero && <Breadcrumbs items={[{ label: 'Home', href: '/' }, { label: 'Contact' }]} />}
+
+        <div className={`${hasHero ? 'mt-8' : ''} grid overflow-hidden border border-grey-200 bg-white shadow-[0_22px_60px_rgba(6,27,54,0.12)] lg:grid-cols-[0.7fr_1.3fr]`}>
+          <aside className="bg-[#f2f6fb] px-6 py-8 sm:px-9 lg:px-10 lg:py-12">
+            <h2 className="text-2xl font-semibold tracking-[-0.02em] text-navy-950">Talk to the project team</h2>
+            <p className="mt-3 max-w-sm text-sm leading-6 text-grey-600">
+              Product selection, samples, finishes, firmware options and OEM branding—all handled by one team.
+            </p>
+
+            <div className="mt-8 divide-y divide-grey-200 border-y border-grey-200">
+              {settings.companyEmail && (
+                <a href={`mailto:${settings.companyEmail}`} className="group flex items-center gap-4 py-5">
+                  <span className="flex h-10 w-10 items-center justify-center bg-navy-950 text-white"><Mail className="h-[18px] w-[18px]" /></span>
+                  <span><span className="block text-xs text-grey-500">Email</span><span className="mt-0.5 block font-medium text-navy-950 group-hover:text-water-600">{settings.companyEmail}</span></span>
                 </a>
-              </div>
-            )}
-            {settings.companyPhone && (
-              <div>
-                <div className="font-semibold text-navy-950 lg:text-white">Phone</div>
-                <div className="mt-1 text-grey-500 lg:text-grey-200">{settings.companyPhone}</div>
-              </div>
-            )}
-            {settings.whatsappNumber && (
-              <div>
-                <div className="font-semibold text-navy-950 lg:text-white">WhatsApp</div>
-                <div className="mt-1 text-grey-500 lg:text-grey-200">{settings.whatsappNumber}</div>
-              </div>
-            )}
-            <div className="hidden rounded-xl bg-white/10 p-4 leading-6 text-grey-100 lg:block">
-              <span className="font-semibold text-white">Fast response.</span> We normally reply within one business day.
+              )}
+              {settings.companyPhone && (
+                <a href={`tel:${settings.companyPhone}`} className="group flex items-center gap-4 py-5">
+                  <span className="flex h-10 w-10 items-center justify-center bg-navy-950 text-white"><Phone className="h-[18px] w-[18px]" /></span>
+                  <span><span className="block text-xs text-grey-500">Phone</span><span className="mt-0.5 block font-medium text-navy-950 group-hover:text-water-600">{settings.companyPhone}</span></span>
+                </a>
+              )}
+              {settings.whatsappNumber && (
+                <a href={`https://wa.me/${settings.whatsappNumber.replace(/\D/g, '')}`} className="group flex items-center gap-4 py-5">
+                  <span className="flex h-10 w-10 items-center justify-center bg-navy-950 text-white"><MessageCircle className="h-[18px] w-[18px]" /></span>
+                  <span><span className="block text-xs text-grey-500">WhatsApp</span><span className="mt-0.5 block font-medium text-navy-950 group-hover:text-water-600">{settings.whatsappNumber}</span></span>
+                </a>
+              )}
+            </div>
+
+            <div className="mt-8 text-sm leading-6 text-grey-600">
+              <p className="font-semibold text-navy-950">Helpful details to include</p>
+              <p className="mt-2">Water source, required capacity, filtration stages, target market, certifications, quantity and logo requirements.</p>
             </div>
           </aside>
 
-          <div
-            id="inquiry-form"
-            className="order-1 scroll-mt-24 rounded-2xl border border-grey-200 bg-white p-5 shadow-lg shadow-navy-950/5 sm:p-8 lg:order-2 lg:p-10"
-          >
-            <div className="mb-6 border-b border-grey-200 pb-5">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-water-600">Free project assessment</p>
-              <h2 className="mt-2 text-2xl font-semibold text-navy-950">Start Your OEM/ODM Project</h2>
-              <p className="mt-2 max-w-2xl text-sm leading-6 text-grey-500">
-                Tell us what you need. Our water purification team will review your requirements and reply within one business day.
-              </p>
-              <div className="mt-4 flex flex-wrap gap-2 text-xs font-medium text-navy-950">
-                <span className="rounded-full bg-water-100 px-3 py-1.5">24-hour response</span>
-                <span className="rounded-full bg-water-100 px-3 py-1.5">OEM &amp; ODM support</span>
-                <span className="rounded-full bg-water-100 px-3 py-1.5">No-obligation quote</span>
+          <div id="inquiry-form" className="scroll-mt-24 px-6 py-8 sm:px-9 lg:px-12 lg:py-12">
+            <div className="mb-8 flex flex-col justify-between gap-4 border-b border-grey-200 pb-6 sm:flex-row sm:items-end">
+              <div>
+                <h2 className="text-3xl font-semibold tracking-[-0.03em] text-navy-950">Request a project quote</h2>
+                <p className="mt-2 max-w-xl text-sm leading-6 text-grey-500">Share the essentials. We&apos;ll follow up with suitable models, MOQ and next steps.</p>
               </div>
+              <span className="shrink-0 text-xs font-medium text-water-700">No obligation</span>
             </div>
-            <InquiryForm sourcePage="/contact" turnstileEnabled={settings.turnstileEnabled} turnstileSiteKey={settings.turnstileSiteKey} />
+            <InquiryForm sourcePage="/contact" turnstileEnabled={settings.turnstileEnabled} turnstileSiteKey={settings.turnstileSiteKey} appearance="contact" />
           </div>
         </div>
 

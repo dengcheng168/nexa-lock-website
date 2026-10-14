@@ -55,12 +55,18 @@ export async function submitInquiryAction(
   }
 
   try {
-    await apiFetch('/inquiries', {
+    const result = await apiFetch<{ id: number; submitted: true; created: boolean }>('/inquiries', {
       method: 'POST',
       headers: await requestContextHeaders(),
       body: JSON.stringify(payload),
     });
-    return { success: true, message: t(locale, 'formSuccessMessage'), metaEventId };
+    return {
+      success: true,
+      message: t(locale, 'formSuccessMessage'),
+      // A duplicate submission reuses the existing inquiry and must not create
+      // a second browser-only Lead that has no matching server event.
+      ...(result.data.created ? { metaEventId } : {}),
+    };
   } catch (err) {
     if (err instanceof ApiError) {
       return { success: false, message: err.message };

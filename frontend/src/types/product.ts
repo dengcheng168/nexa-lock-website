@@ -9,6 +9,8 @@ export interface ProductCategory {
   seoTitle: string | null;
   seoDescription: string | null;
   updatedAt: string;
+  /** Translation timestamp for the requested locale; falls back to updatedAt. */
+  localizedUpdatedAt?: string;
 }
 
 export interface ProductSpec {
@@ -39,6 +41,7 @@ export interface Product {
   shortDescription: string | null;
   description: string;
   mainImage: string;
+  videoUrl?: string | null;
   galleryImages: ProductImage[];
   specs: ProductSpec[];
   features: (string | { title: string; description?: string })[];
@@ -55,4 +58,6 @@ export interface Product {
   seoKeywords: string | null;
   ogImage: string | null;
   updatedAt: string;
+  /** Translation timestamp for the requested locale; falls back to updatedAt. */
+  localizedUpdatedAt?: string;
 }

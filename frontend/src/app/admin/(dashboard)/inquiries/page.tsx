@@ -18,7 +18,9 @@ const STATUS_OPTIONS = [
   { value: '', label: '全部' },
   { value: 'NEW', label: '待处理' },
   { value: 'CONTACTED', label: '已联系' },
+  { value: 'QUALIFIED', label: '有效客户' },
   { value: 'QUOTED', label: '已报价' },
+  { value: 'WON', label: '已成交' },
   { value: 'CLOSED', label: '已关闭' },
   { value: 'SPAM', label: '垃圾询盘' },
 ];

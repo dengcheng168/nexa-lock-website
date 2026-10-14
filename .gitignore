@@ -6,6 +6,7 @@ node_modules/
 .next/
 dist/
 build/
+/.codespaces-data/
 
 # Env files
 .env
@@ -62,3 +63,10 @@ coverage/
 
 # TypeScript build info
 *.tsbuildinfo
+
+# Local audit/build artifacts and release bundles
+*.zip
+*.tar.gz
+*.tgz
+*-audit*.csv
+*-audit*.json

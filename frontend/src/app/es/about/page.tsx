@@ -11,13 +11,15 @@ import { JsonLd } from '@/components/seo/JsonLd';
 import { aboutPageJsonLd, breadcrumbListJsonLd, organizationJsonLd } from '@/lib/seo/jsonld';
 import { getPublicSettings } from '@/lib/api/settings';
 import { getSiteUrl } from '@/lib/seo/site';
+import { getDefaultSocialImages } from '@/lib/seo/base-metadata';
 
 export async function generateMetadata(): Promise<Metadata> {
-  const page = await getPageBySlug('about', 'es');
+  const [page, images] = await Promise.all([getPageBySlug('about', 'es'), getDefaultSocialImages()]);
   return {
     title: page?.seoTitle ?? page?.title ?? t('es', 'aboutPageTitle'),
     description: page?.seoDescription ?? undefined,
     alternates: { canonical: '/es/about', languages: { en: '/about', es: '/es/about', 'x-default': '/about' } },
+    openGraph: { type: 'website', url: '/es/about', images },
   };
 }
 
@@ -76,15 +78,17 @@ export default async function SpanishAboutPage() {
       <WhatWeSupport locale="es" />
       <FactoryGallery items={galleryItems} locale="es" />
 
-      <section className="bg-navy-950 py-14">
-        <Container className="text-center">
-          <h2 className="text-2xl font-semibold text-white sm:text-3xl">{t('es', 'aboutCtaTitle')}</h2>
-          <p className="mx-auto mt-3 max-w-2xl text-grey-100/90">{t('es', 'aboutCtaDescription')}</p>
-          <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
-            <Button href="/es/contact" variant="primary">
+      <section className="border-t border-grey-200 bg-[#f2f6fb] py-10 sm:py-12">
+        <Container className="grid items-center gap-7 lg:grid-cols-[1fr_auto] lg:gap-12">
+          <div className="max-w-3xl border-l-4 border-water-500 pl-5 sm:pl-7">
+            <h2 className="text-3xl font-semibold tracking-[-0.03em] text-navy-950">{t('es', 'aboutCtaTitle')}</h2>
+            <p className="mt-3 max-w-2xl leading-7 text-grey-600">{t('es', 'aboutCtaDescription')}</p>
+          </div>
+          <div className="flex flex-wrap items-center gap-3 lg:justify-end">
+            <Button href="/es/contact" variant="primary" className="min-w-40">
               {t('es', 'aboutCtaPrimaryButton')}
             </Button>
-            <Button href="/es/products" variant="outline" className="!border-white !text-white hover:!bg-white hover:!text-navy-950">
+            <Button href="/es/products" variant="outline" className="min-w-36 !border-navy-950 !text-navy-950 hover:!bg-navy-950 hover:!text-white">
               {t('es', 'aboutCtaSecondaryButton')}
             </Button>
           </div>

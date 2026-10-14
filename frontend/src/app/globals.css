@@ -1,20 +1,20 @@
 @import 'tailwindcss';
 
 :root {
-  /* 深蓝 / 白 / 浅灰为主色，水蓝作强调色 —— 参见需求文档「五、官网视觉风格」 */
-  --color-navy-950: #0a2540;
-  --color-navy-900: #0d3059;
-  --color-navy-800: #123f70;
-  --color-navy-700: #1a5088;
-  --color-water-500: #1a9fd6;
-  --color-water-600: #1687b6;
-  --color-water-100: #e3f4fb;
-  --color-grey-50: #f6f8fa;
-  --color-grey-100: #eef1f4;
-  --color-grey-200: #e2e6ea;
-  --color-grey-500: #6b7684;
-  --color-grey-700: #3c4550;
-  --color-ink-900: #101820;
+  /* 智能门锁官网：深海蓝 + 冰白，强调可靠、安全与数字化体验。 */
+  --color-navy-950: #071b35;
+  --color-navy-900: #0a274a;
+  --color-navy-800: #0d315c;
+  --color-navy-700: #174b82;
+  --color-water-500: #2f80ed;
+  --color-water-600: #1769d2;
+  --color-water-100: #e8f2ff;
+  --color-grey-50: #f5f9fd;
+  --color-grey-100: #edf3f8;
+  --color-grey-200: #d7e2ec;
+  --color-grey-500: #65768a;
+  --color-grey-700: #34465b;
+  --color-ink-900: #0b1f35;
 
   --background: #ffffff;
   --foreground: var(--color-ink-900);
@@ -152,6 +152,11 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans);
+}
+
+::selection {
+  background: #2f80ed;
+  color: #ffffff;
 }
 
 /* 轻量动画：仅淡入 / 上移 / 数字滚动，禁止大型特效（需求文档「五、官网视觉风格」） */

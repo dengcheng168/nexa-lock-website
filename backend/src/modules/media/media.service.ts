@@ -1,6 +1,10 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import os from 'node:os';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
 import type { PrismaClient } from '@prisma/client';
+import ffmpegPath from 'ffmpeg-static';
 import { ALLOWED_UPLOAD_MIME_TYPES, RASTER_IMAGE_MIME_TYPES } from '../../config/constants.js';
 import { toSkipTake, buildPaginationMeta, type PaginationQuery } from '../../lib/pagination.js';
 import {
@@ -17,6 +21,41 @@ import { processRasterImage } from './image-processing.js';
 export class UnsupportedFileTypeError extends Error {}
 export class MediaInUseError extends Error {}
 
+const execFileAsync = promisify(execFile);
+// ffmpeg-static 在 NodeNext 下的运行值是路径字符串，但其 CommonJS 包声明会被 TS 解析成模块对象。
+const ffmpegBinary = ffmpegPath as unknown as string | null;
+
+async function normalizeVideoForWeb(input: SaveUploadInput): Promise<SaveUploadInput> {
+  if (input.mimeType !== 'video/quicktime') return input;
+  if (!ffmpegBinary) throw new Error('视频转换组件不可用');
+
+  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'koigate-video-'));
+  const sourcePath = path.join(tempDir, 'source.mov');
+  const outputPath = path.join(tempDir, 'output.mp4');
+  try {
+    await fs.writeFile(sourcePath, input.buffer);
+    await execFileAsync(
+      ffmpegBinary,
+      [
+        '-y', '-i', sourcePath,
+        '-c:v', 'libx264', '-preset', 'fast', '-crf', '23',
+        '-pix_fmt', 'yuv420p', '-movflags', '+faststart',
+        '-c:a', 'aac', '-b:a', '128k',
+        outputPath,
+      ],
+      { windowsHide: true, maxBuffer: 10 * 1024 * 1024 },
+    );
+    return {
+      ...input,
+      buffer: await fs.readFile(outputPath),
+      originalName: input.originalName.replace(/\.mov$/i, '.mp4'),
+      mimeType: 'video/mp4',
+    };
+  } finally {
+    await fs.rm(tempDir, { recursive: true, force: true });
+  }
+}
+
 export interface SaveUploadInput {
   buffer: Buffer;
   originalName: string;
@@ -26,23 +65,24 @@ export interface SaveUploadInput {
 }
 
 export async function saveUpload(prisma: PrismaClient, input: SaveUploadInput) {
-  const extension = ALLOWED_UPLOAD_MIME_TYPES[input.mimeType];
+  const normalizedInput = await normalizeVideoForWeb(input);
+  const extension = ALLOWED_UPLOAD_MIME_TYPES[normalizedInput.mimeType];
   if (!extension) {
-    throw new UnsupportedFileTypeError(`不支持的文件类型：${input.mimeType}`);
+    throw new UnsupportedFileTypeError(`不支持的文件类型：${normalizedInput.mimeType}`);
   }
 
   await ensureUploadDirs();
 
   const filename = generateSafeFilename(extension);
-  await fs.writeFile(path.join(ORIGINALS_DIR, filename), input.buffer);
+  await fs.writeFile(path.join(ORIGINALS_DIR, filename), normalizedInput.buffer);
 
   let webpUrl: string | null = null;
   let thumbnailUrl: string | null = null;
   let width: number | null = null;
   let height: number | null = null;
 
-  if (RASTER_IMAGE_MIME_TYPES.has(input.mimeType)) {
-    const processed = await processRasterImage(input.buffer);
+  if (RASTER_IMAGE_MIME_TYPES.has(normalizedInput.mimeType)) {
+    const processed = await processRasterImage(normalizedInput.buffer);
     width = processed.width;
     height = processed.height;
 
@@ -62,12 +102,12 @@ export async function saveUpload(prisma: PrismaClient, input: SaveUploadInput) {
   return prisma.media.create({
     data: {
       filename,
-      originalName: input.originalName,
+      originalName: normalizedInput.originalName,
       url: toPublicUrl('originals', filename),
       webpUrl,
       thumbnailUrl,
-      mimeType: input.mimeType,
-      size: input.buffer.byteLength,
+      mimeType: normalizedInput.mimeType,
+      size: normalizedInput.buffer.byteLength,
       width,
       height,
       altText: input.altText,
@@ -131,6 +171,7 @@ export async function findMediaUsage(prisma: PrismaClient, media: MediaUrls) {
       deletedAt: null,
       OR: [
         { mainImage: { in: urls } },
+        { videoUrl: { in: urls } },
         { ogImage: { in: urls } },
         { specSheetUrl: { in: urls } },
         // 富文本正文/相册/应用场景区块里手动插入或选择的图片也算在用，否则"未使用媒体"

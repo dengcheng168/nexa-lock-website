@@ -15,7 +15,32 @@ function trackRoute(pathname: string, locale: string) {
   const randomId = () => typeof crypto?.randomUUID === 'function'
     ? crypto.randomUUID()
     : `${Date.now().toString(36)}_${Math.random().toString(36).slice(2)}`;
-  sendMetaRouteEvents({ pathname, locale, randomId, track: window.fbq });
+  sendMetaRouteEvents({
+    pathname,
+    locale,
+    randomId,
+    track: window.fbq,
+    mirrorProductDetailView: (event) => {
+      const productSlug = event.parameters.content_ids?.[0];
+      if (typeof productSlug !== 'string') return;
+      const body = JSON.stringify({ eventId: event.eventID, sourcePath: pathname, productSlug });
+      try {
+        if (typeof navigator.sendBeacon === 'function'
+          && navigator.sendBeacon('/api/meta-events/product-detail-view', new Blob([body], { type: 'application/json' }))) {
+          return;
+        }
+        fetch('/api/meta-events/product-detail-view', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body,
+          keepalive: true,
+          credentials: 'same-origin',
+        }).catch(() => {});
+      } catch {
+        // Analytics is best-effort and must never affect product navigation.
+      }
+    },
+  });
 }
 
 /** Sends page events after the Pixel bootstrap signals readiness, including App Router transitions. */

@@ -5,12 +5,17 @@ import { FaqAccordion } from '@/components/faq/FaqAccordion';
 import { JsonLd } from '@/components/seo/JsonLd';
 import { listFaqs } from '@/lib/api/content';
 import { faqPageJsonLd } from '@/lib/seo/jsonld';
+import { getDefaultSocialImages } from '@/lib/seo/base-metadata';
 
-export const metadata: Metadata = {
-  title: 'Water Purifier OEM & ODM Frequently Asked Questions',
-  description: 'Find answers about Li-Men water purifier products, OEM/ODM customization, minimum orders, quality control, certificates, lead times and global shipping.',
-  alternates: { canonical: '/faq', languages: { en: '/faq', es: '/es/faq', 'x-default': '/faq' } },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const images = await getDefaultSocialImages();
+  return {
+    title: 'Smart Lock OEM & ODM Frequently Asked Questions',
+    description: 'Find answers about smart lock compatibility, OEM/ODM customization, minimum orders, quality control, certifications and lead times.',
+    alternates: { canonical: '/faq', languages: { en: '/faq', es: '/es/faq', 'x-default': '/faq' } },
+    openGraph: { type: 'website', url: '/faq', images },
+  };
+}
 
 export default async function FaqPage() {
   const faqs = await listFaqs();

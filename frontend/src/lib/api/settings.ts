@@ -1,3 +1,4 @@
+import { cache } from 'react';
 import { apiFetch } from './client';
 import { resolveMediaUrl } from '@/lib/utils/media';
 import type { PublicSiteSettings } from '@/types/settings';
@@ -8,8 +9,8 @@ import type { PublicSiteSettings } from '@/types/settings';
  * 页面会先用占位内容完成预渲染，容器启动后由 ISR（revalidate）在首次真实请求时刷新为最新内容。
  */
 const FALLBACK_SETTINGS: PublicSiteSettings = {
-  companyName: 'Li-Men',
-  brandName: 'Li-Men',
+  companyName: 'Placeholder Smart Lock Technology Co., Ltd.',
+  brandName: 'NEXA LOCK',
   companyLogoUrl: null,
   faviconUrl: null,
   companyAddress: null,
@@ -26,14 +27,14 @@ const FALLBACK_SETTINGS: PublicSiteSettings = {
   defaultSeoDescription: null,
   defaultOgImage: null,
   googleSiteVerification: null,
-  heroHeadline: 'OEM & ODM Water Purifier Manufacturer',
-  heroSubheadline: 'Reliable water purification solutions for global brands, distributors and commercial projects.',
-  heroButton1Text: 'Get a Quote',
+  heroHeadline: 'Smart Access. Built Around You.',
+  heroSubheadline: 'Connected smart locks for homes, apartments and hospitality projects — engineered for secure, effortless entry.',
+  heroButton1Text: 'Start a Project',
   heroButton1Link: '/contact',
-  heroButton2Text: 'View Products',
+  heroButton2Text: 'Explore Smart Locks',
   heroButton2Link: '/products',
-  heroDesktopImage: null,
-  heroMobileImage: null,
+  heroDesktopImage: '/images/smart-lock/hero-smart-lock.png',
+  heroMobileImage: '/images/smart-lock/hero-smart-lock.png',
   homepageVideoUrl: null,
   coreAdvantages: [],
   footerText: null,
@@ -61,14 +62,16 @@ function resolveSettingsMedia(settings: PublicSiteSettings): PublicSiteSettings 
   };
 }
 
-export async function getPublicSettings(): Promise<PublicSiteSettings> {
+export const getPublicSettings = cache(async (): Promise<PublicSiteSettings> => {
   try {
-    const { data } = await apiFetch<PublicSiteSettings>('/settings/public', {
-      revalidate: 300,
-      tags: ['settings'],
-    });
+    const { data } = await apiFetch<PublicSiteSettings>(
+      '/settings/public',
+      process.env.NODE_ENV === 'development'
+        ? { revalidate: 1, tags: ['settings'] }
+        : { revalidate: 300, tags: ['settings'] },
+    );
     return resolveSettingsMedia(data);
   } catch {
     return FALLBACK_SETTINGS;
   }
-}
+});

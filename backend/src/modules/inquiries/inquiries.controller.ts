@@ -2,6 +2,8 @@ import type { FastifyReply, FastifyRequest } from 'fastify';
 import { ok, fail } from '../../lib/api-response.js';
 import { paginationQuerySchema, toSkipTake, buildPaginationMeta } from '../../lib/pagination.js';
 import { auditLogFromRequest } from '../../lib/audit-log.js';
+import { logger } from '../../lib/logger.js';
+import { MetaConversionError } from '../../lib/meta-conversions.js';
 import {
   createInquiry,
   listAdminInquiries,
@@ -12,6 +14,8 @@ import {
   listCustomers,
   getInquirySourceStats,
   TurnstileVerificationError,
+  reportInquiryQuality,
+  shouldReportInquiryQuality,
 } from './inquiries.service.js';
 import { createInquirySchema, updateInquirySchema, inquiryListQuerySchema } from './inquiries.schema.js';
 
@@ -19,11 +23,11 @@ export async function publicCreateHandler(request: FastifyRequest, reply: Fastif
   const input = createInquirySchema.parse(request.body);
 
   try {
-    const inquiry = await createInquiry(request.server.prisma, input, {
+    const { inquiry, created } = await createInquiry(request.server.prisma, input, {
       ipAddress: request.ip,
       userAgent: request.headers['user-agent'],
     });
-    return ok({ id: inquiry.id, submitted: true });
+    return ok({ id: inquiry.id, submitted: true, created });
   } catch (err) {
     if (err instanceof TurnstileVerificationError) {
       return reply.status(400).send(fail(err.message, 'TURNSTILE_FAILED'));
@@ -47,9 +51,24 @@ export async function adminDetailHandler(request: FastifyRequest<{ Params: { id:
   return ok(inquiry);
 }
 
+export async function adminMetaEventLogsHandler(request: FastifyRequest<{ Params: { id: string } }>) {
+  const inquiryId = String(Number(request.params.id));
+  const items = await request.server.prisma.auditLog.findMany({
+    where: { entityType: 'inquiry', entityId: inquiryId, action: 'meta.quality_event' },
+    orderBy: { createdAt: 'desc' },
+    take: 100,
+    select: { id: true, summary: true, result: true, metadata: true, createdAt: true },
+  });
+  return ok(items);
+}
+
 export async function adminUpdateHandler(request: FastifyRequest<{ Params: { id: string } }>) {
   const input = updateInquirySchema.parse(request.body);
-  const inquiry = await updateInquiry(request.server.prisma, Number(request.params.id), input);
+  const id = Number(request.params.id);
+  const previous = input.status === undefined
+    ? null
+    : await getInquiryById(request.server.prisma, id);
+  const inquiry = await updateInquiry(request.server.prisma, id, input);
   // 该模型没有负责人/指派字段，只在状态确实发生变更时记录审计日志（备注更新不属于本次要求的必审范围）
   if (input.status !== undefined) {
     await auditLogFromRequest(request.server.prisma, request, {
@@ -59,6 +78,40 @@ export async function adminUpdateHandler(request: FastifyRequest<{ Params: { id:
       summary: `更新询盘 #${inquiry.id} 状态为 ${inquiry.status}`,
       after: { status: inquiry.status },
     });
+  }
+  if (previous && shouldReportInquiryQuality(previous.status, input.status)) {
+    try {
+      const report = await reportInquiryQuality(request.server.prisma, inquiry.id, inquiry.status);
+      if (report) {
+        await auditLogFromRequest(request.server.prisma, request, {
+          action: 'meta.quality_event',
+          resourceType: 'inquiry',
+          resourceId: inquiry.id,
+          summary: `Meta ${report.eventName} 回传成功`,
+          result: 'SUCCESS',
+          metadata: { eventName: report.eventName, eventId: report.eventId, inquiryStatus: inquiry.status },
+        });
+      }
+    } catch (err) {
+      // Meta outages must not roll back a legitimate CRM status update.
+      logger.warn({
+        inquiryId: inquiry.id,
+        status: inquiry.status,
+        error: err instanceof Error ? err.message : 'unknown_error',
+      }, 'Meta 询盘质量事件发送失败');
+      await auditLogFromRequest(request.server.prisma, request, {
+        action: 'meta.quality_event',
+        resourceType: 'inquiry',
+        resourceId: inquiry.id,
+        summary: `Meta ${inquiry.status} 阶段事件回传失败`,
+        result: 'FAILURE',
+        metadata: {
+          inquiryStatus: inquiry.status,
+          errorCode: err instanceof MetaConversionError ? err.code : 'unexpected_error',
+          httpStatus: err instanceof MetaConversionError ? err.status : undefined,
+        },
+      });
+    }
   }
   return ok(inquiry);
 }

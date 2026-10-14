@@ -21,13 +21,26 @@ import { InquirySection } from '@/components/home/InquirySection';
 export const dynamic = 'force-dynamic';
 
 export async function generateMetadata(): Promise<Metadata> {
-  const settings = await getPublicSettings();
+  const [settings, siteUrl] = await Promise.all([getPublicSettings(), getSiteUrl()]);
   return {
     // title/description 显式设为 undefined 也会被 Next.js 当作"本段落定义了该字段"，
     // 从而盖掉根 layout 的 title.default 变成空标题，所以未配置时要整个 key 都不传
     ...(settings.defaultSeoTitle ? { title: settings.defaultSeoTitle } : {}),
     ...(settings.defaultSeoDescription ? { description: settings.defaultSeoDescription } : {}),
-    alternates: { canonical: '/', languages: { en: '/', es: '/es', 'x-default': '/' } },
+    // Next.js normalizes the root canonical to the bare origin when
+    // trailingSlash=false. Use that same absolute form for every homepage
+    // discovery signal so canonical, hreflang, Open Graph and sitemap agree.
+    alternates: {
+      canonical: siteUrl,
+      languages: { en: siteUrl, es: `${siteUrl}/es`, 'x-default': siteUrl },
+    },
+    openGraph: {
+      type: 'website',
+      url: siteUrl,
+      images: settings.defaultOgImage || settings.heroDesktopImage || settings.companyLogoUrl
+        ? [settings.defaultOgImage || settings.heroDesktopImage || settings.companyLogoUrl!]
+        : undefined,
+    },
   };
 }
 
@@ -36,7 +49,7 @@ export default async function HomePage() {
     await Promise.all([
       getPublicSettings(),
       listVisibleProductCategories(),
-      listProducts({ featured: true, pageSize: 8 }),
+      listProducts({ featured: true, pageSize: 4 }),
       listCertificates(),
       listBlogPosts({ pageSize: 3 }),
       listFaqs(),

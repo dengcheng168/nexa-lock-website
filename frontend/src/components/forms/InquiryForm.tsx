@@ -1,17 +1,20 @@
 'use client';
 
-import { useActionState, useEffect, useState } from 'react';
+import Link from 'next/link';
+import { useActionState, useEffect, useRef, useState } from 'react';
 import { TurnstileWidget } from './TurnstileWidget';
 import { submitInquiryAction, type InquiryFormState } from '@/lib/actions/inquiry';
 import { t } from '@/lib/i18n/site-strings';
 import type { Locale } from '@/lib/i18n/locales';
 import { Honeypot } from './Honeypot';
-import { waitForMetaPixelReady } from '@/lib/analytics/meta-events';
+import { buildMetaAdvancedMatching, waitForMetaPixelReady } from '@/lib/analytics/meta-events';
 
 const initialState: InquiryFormState = {};
 
-const inputClasses =
+const defaultInputClasses =
   'min-h-11 w-full rounded-md border border-grey-200 px-3 py-2 text-sm text-navy-950 placeholder:text-grey-500 focus:border-water-500 focus:outline-none focus:ring-1 focus:ring-water-500';
+const contactInputClasses =
+  'min-h-12 w-full rounded-none border-0 border-b border-grey-300 bg-grey-50 px-3 py-2 text-sm text-navy-950 placeholder:text-grey-500 focus:border-water-500 focus:bg-white focus:outline-none focus:ring-0';
 
 declare global {
   interface Window {
@@ -27,21 +30,29 @@ export function InquiryForm({
   locale = 'en',
   turnstileEnabled = false,
   turnstileSiteKey,
+  appearance = 'default',
 }: {
   sourcePage: string;
   defaultProductName?: string;
   locale?: Locale;
   turnstileEnabled?: boolean;
   turnstileSiteKey?: string | null;
+  appearance?: 'default' | 'contact';
 }) {
   const [state, formAction, pending] = useActionState(submitInquiryAction, initialState);
   const [token, setToken] = useState('');
+  const metaMatchingRef = useRef<Record<string, string>>({});
+  const inputClasses = appearance === 'contact' ? contactInputClasses : defaultInputClasses;
 
   useEffect(() => {
     if (!state.success || !state.metaEventId) return;
 
     const send = () => {
       if (typeof window.fbq !== 'function') return;
+      const advancedMatching = metaMatchingRef.current;
+      if (window.__META_PIXEL_ID__ && Object.keys(advancedMatching).length > 0) {
+        window.fbq('init', window.__META_PIXEL_ID__, advancedMatching);
+      }
       window.fbq(
         'track',
         'Lead',
@@ -72,7 +83,23 @@ export function InquiryForm({
   }
 
   return (
-    <form action={formAction} className="space-y-4">
+    <form
+      action={formAction}
+      className="space-y-4"
+      onSubmitCapture={(event) => {
+        const formData = new FormData(event.currentTarget);
+        const text = (key: string) => {
+          const value = formData.get(key);
+          return typeof value === 'string' ? value : undefined;
+        };
+        metaMatchingRef.current = buildMetaAdvancedMatching({
+          name: text('name'),
+          email: text('email'),
+          phone: text('phone') || text('whatsapp'),
+          country: text('country'),
+        });
+      }}
+    >
       <input type="hidden" name="sourcePage" value={sourcePage} />
       <input type="hidden" name="locale" value={locale} />
       <Honeypot />
@@ -151,10 +178,18 @@ export function InquiryForm({
       <button
         type="submit"
         disabled={pending || (turnstileEnabled && !token)}
-        className="inline-flex min-h-11 w-full items-center justify-center rounded-md bg-water-500 px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-water-600 disabled:opacity-60 sm:w-auto"
+        className={`inline-flex min-h-12 items-center justify-center bg-water-500 px-7 py-3 text-sm font-semibold text-white transition-colors hover:bg-water-600 disabled:opacity-60 ${appearance === 'contact' ? 'w-full sm:w-auto sm:min-w-52' : 'w-full rounded-md sm:w-auto'}`}
       >
         {pending ? t(locale, 'formSubmitting') : t(locale, 'formSubmitButton')}
       </button>
+      <p className="text-xs leading-relaxed text-grey-500">
+        {locale === 'es'
+          ? 'Al enviar este formulario, aceptas que usemos tus datos de contacto para responder y medir la publicidad mediante Meta.'
+          : 'By submitting this form, you agree that we may use your contact details to respond and measure advertising through Meta.'}{' '}
+        <Link href={locale === 'es' ? '/es/privacy-policy' : '/privacy-policy'} className="underline hover:text-navy-950">
+          {locale === 'es' ? 'Política de Privacidad' : 'Privacy Policy'}
+        </Link>
+      </p>
     </form>
   );
 }

@@ -11,9 +11,9 @@ export function FeaturedProducts({ products, locale = 'en' }: { products: Produc
   if (products.length === 0) return null;
 
   return (
-    <section className="py-16">
+    <section className="border-y border-grey-200 bg-grey-50 py-24">
       <Container>
-        <SectionHeading eyebrow={t(locale, 'sectionFeaturedProductsEyebrow')} title={t(locale, 'sectionFeaturedProductsTitle')} />
+        <SectionHeading eyebrow={t(locale, 'sectionFeaturedProductsEyebrow')} title={t(locale, 'sectionFeaturedProductsTitle')} align="center" />
         <div className="mt-10">
           <ProductGrid products={products} locale={locale} center />
         </div>

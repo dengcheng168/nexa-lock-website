@@ -27,6 +27,8 @@ export interface BlogPost {
   seoDescription: string | null;
   tags: BlogTag[];
   updatedAt: string;
+  /** Translation timestamp for the requested locale; falls back to updatedAt. */
+  localizedUpdatedAt?: string;
   /** False only when a requested non-English locale has no published translation. */
   hasLocaleTranslation?: boolean;
 }

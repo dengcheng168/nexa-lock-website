@@ -1,3 +1,4 @@
+import { cache } from 'react';
 import { apiFetch, ApiError, type ApiMeta } from './client';
 import { resolveMediaUrl } from '@/lib/utils/media';
 import type { Product, ProductCategory } from '@/types/product';
@@ -34,12 +35,18 @@ const CATEGORY_TRANSLATABLE_FIELDS: (keyof ProductCategory)[] = ['name', 'descri
 
 export function localizeProduct(product: WithTranslation<Product>): Product {
   const { translation, ...base } = product;
-  return resolveLocalizedEntity(base as Product, translation, PRODUCT_TRANSLATABLE_FIELDS);
+  return {
+    ...resolveLocalizedEntity(base as Product, translation, PRODUCT_TRANSLATABLE_FIELDS),
+    localizedUpdatedAt: translation?.updatedAt ?? base.updatedAt,
+  };
 }
 
 function localizeCategory(category: WithTranslation<ProductCategory>): ProductCategory {
   const { translation, ...base } = category;
-  return resolveLocalizedEntity(base as ProductCategory, translation, CATEGORY_TRANSLATABLE_FIELDS);
+  return {
+    ...resolveLocalizedEntity(base as ProductCategory, translation, CATEGORY_TRANSLATABLE_FIELDS),
+    localizedUpdatedAt: translation?.updatedAt ?? base.updatedAt,
+  };
 }
 
 export function resolveProductMedia(product: Product): Product {
@@ -152,7 +159,7 @@ export async function listProductCategories(locale: Locale = 'en'): Promise<Prod
  * products.service.ts），这里不重复做发布状态判断，只是按 categoryId 交叉过滤，不新增接口、
  * 不改分页合同。分类总数不大，一次性拉全部已发布产品做交叉即可，避免逐个分类发请求的 N+1。
  */
-export async function listVisibleProductCategories(locale: Locale = 'en'): Promise<ProductCategory[]> {
+export const listVisibleProductCategories = cache(async (locale: Locale = 'en'): Promise<ProductCategory[]> => {
   const [categories, products] = await Promise.all([listProductCategories(locale), listAllProducts(locale)]);
   const categoryIdsWithProducts = new Set(products.map((p) => p.categoryId));
   const visible = categories.filter((c) => categoryIdsWithProducts.has(c.id));
@@ -164,7 +171,7 @@ export async function listVisibleProductCategories(locale: Locale = 'en'): Promi
     // A redirect lookup outage must not make the public category navigation disappear.
     return visible;
   }
-}
+});
 
 export async function getProductCategoryBySlug(
   slug: string,

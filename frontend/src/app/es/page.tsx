@@ -35,15 +35,22 @@ export async function generateMetadata(): Promise<Metadata> {
     ...(seo.description ? { description: seo.description } : {}),
     alternates: { canonical: '/es', languages: { en: '/', es: '/es', 'x-default': '/' } },
     openGraph: {
+      type: 'website',
       url: '/es',
       locale: 'es',
       alternateLocale: 'en',
       ...(seo.title ? { title: seo.title } : {}),
       ...(seo.description ? { description: seo.description } : {}),
+      images: settings.defaultOgImage || settings.heroDesktopImage || settings.companyLogoUrl
+        ? [settings.defaultOgImage || settings.heroDesktopImage || settings.companyLogoUrl!]
+        : undefined,
     },
     twitter: {
       ...(seo.title ? { title: seo.title } : {}),
       ...(seo.description ? { description: seo.description } : {}),
+      images: settings.defaultOgImage || settings.heroDesktopImage || settings.companyLogoUrl
+        ? [settings.defaultOgImage || settings.heroDesktopImage || settings.companyLogoUrl!]
+        : undefined,
     },
   };
 }
@@ -53,7 +60,7 @@ export default async function SpanishHomePage() {
     await Promise.all([
       getPublicSettings(),
       listVisibleProductCategories('es'),
-      listProducts({ featured: true, pageSize: 8 }, 'es'),
+      listProducts({ featured: true, pageSize: 4 }, 'es'),
       listCertificates('es'),
       listBlogPosts({ pageSize: 3 }, 'es'),
       // listFaqs('es') 内部按 FaqTranslation 已发布内容优先、旧 Translation 表兼容、

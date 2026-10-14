@@ -5,9 +5,12 @@ import { Breadcrumbs } from '@/components/ui/Breadcrumbs';
 import { CategoryFilterSidebar } from '@/components/product/CategoryFilterSidebar';
 import { ProductGrid } from '@/components/product/ProductGrid';
 import { Pagination } from '@/components/ui/Pagination';
-import { CategoryBuyerGuide } from '@/components/product/CategoryBuyerGuide';
+import { JsonLd } from '@/components/seo/JsonLd';
 import { getProductCategoryBySlug, listVisibleProductCategories } from '@/lib/api/products';
+import { collectionPagesJsonLd } from '@/lib/seo/jsonld';
 import { paginatedDescription, paginatedPath, paginatedTitle } from '@/lib/seo/pagination';
+import { getSiteUrl } from '@/lib/seo/site';
+import { getDefaultSocialImages } from '@/lib/seo/base-metadata';
 
 export async function generateMetadata({
   params,
@@ -18,7 +21,10 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { categorySlug } = await params;
   const { page: pageParam } = await searchParams;
-  const result = await getProductCategoryBySlug(categorySlug);
+  const [result, defaultImages] = await Promise.all([
+    getProductCategoryBySlug(categorySlug),
+    getDefaultSocialImages(),
+  ]);
   if (!result) return {};
   const enPath = paginatedPath(`/products/category/${categorySlug}`, pageParam);
   const esPath = paginatedPath(`/es/products/category/${categorySlug}`, pageParam);
@@ -34,6 +40,7 @@ export async function generateMetadata({
         'x-default': enPath,
       },
     },
+    openGraph: { type: 'website', url: enPath, images: result.category.image ? [result.category.image] : defaultImages },
     // 分类当前没有任何已发布产品时不参与索引，但仍允许爬虫顺着链接继续走——
     // 页面本身不删除，只是不让空分类占搜索结果位
     ...(result.products.length === 0 ? { robots: { index: false, follow: true } } : {}),
@@ -58,14 +65,35 @@ export default async function ProductCategoryPage({
 
   if (!result) notFound();
 
+  const siteUrl = await getSiteUrl();
+  const categoryUrl = `${siteUrl}/products/category/${categorySlug}`;
+
   return (
     <Container className="py-12">
+      {page === 1 && (
+        <JsonLd
+          data={collectionPagesJsonLd({
+            name: result.category.name,
+            description: result.category.description ?? result.category.seoDescription ?? result.category.name,
+            url: categoryUrl,
+            itemCount: result.meta?.total ?? result.products.length,
+            items: result.products.map((product) => ({
+              name: product.name,
+              url: `${siteUrl}/products/${product.slug}`,
+            })),
+            breadcrumbs: [
+              { name: 'Home', url: siteUrl },
+              { name: 'Products', url: `${siteUrl}/products` },
+              { name: result.category.name, url: categoryUrl },
+            ],
+          })}
+        />
+      )}
       <Breadcrumbs
         items={[{ label: 'Home', href: '/' }, { label: 'Products', href: '/products' }, { label: result.category.name }]}
       />
       <h1 className="mt-4 text-3xl font-semibold text-navy-950">{result.category.name}</h1>
       {result.category.description && <p className="mt-3 max-w-2xl text-grey-500">{result.category.description}</p>}
-      <CategoryBuyerGuide slug={categorySlug} />
 
       <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-[240px_1fr]">
         <aside>

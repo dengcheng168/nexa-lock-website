@@ -3,6 +3,12 @@ import { getPublicSettings } from '@/lib/api/settings';
 import { getSiteUrl } from './site';
 import type { Locale } from '@/lib/i18n/locales';
 
+export async function getDefaultSocialImages(): Promise<string[] | undefined> {
+  const settings = await getPublicSettings();
+  const image = settings.defaultOgImage || settings.heroDesktopImage || settings.companyLogoUrl;
+  return image ? [image] : undefined;
+}
+
 /**
  * Next.js「多个根 layout」约定：一旦 app/ 顶层没有共享的 layout.tsx，每个独立的根 layout
  * （(site)/es/admin/登录页）各自负责声明自己的 <html>，metadata 也不会跨根继承——
@@ -23,23 +29,25 @@ async function sharedMetadataBase(): Promise<Pick<Metadata, 'metadataBase' | 'ic
 /** 前台公开站点（(site) 和 es 两棵根 layout 共用）：品牌默认标题/描述/OG，按 locale 只有 openGraph 部分不同 */
 export async function getPublicBaseMetadata(locale: Locale): Promise<Metadata> {
   const [base, settings] = await Promise.all([sharedMetadataBase(), getPublicSettings()]);
+  const socialImage = settings.defaultOgImage || settings.heroDesktopImage || settings.companyLogoUrl || undefined;
   return {
     ...base,
     title: {
-      default: 'OEM & ODM Water Purifier Manufacturer | Li-Men',
-      template: `%s | ${settings.brandName || 'Li-Men'}`,
+      default: settings.defaultSeoTitle || 'Smart Lock Manufacturer & OEM/ODM Partner | NEXA LOCK',
+      template: `%s | ${settings.brandName || 'NEXA LOCK'}`,
     },
-    description: 'Reliable water purification solutions for global brands, distributors and commercial projects.',
+    description: settings.defaultSeoDescription
+      || 'Smart door locks and OEM/ODM access solutions for homes, apartments, hotels and property projects.',
     openGraph: {
       type: 'website',
       locale,
       alternateLocale: locale === 'en' ? 'es' : 'en',
-      siteName: settings.brandName || settings.companyName || 'Li-Men',
-      images: settings.defaultOgImage ? [settings.defaultOgImage] : undefined,
+      siteName: settings.brandName || settings.companyName || 'NEXA LOCK',
+      images: socialImage ? [socialImage] : undefined,
     },
     twitter: {
       card: 'summary_large_image',
-      images: settings.defaultOgImage ? [settings.defaultOgImage] : undefined,
+      images: socialImage ? [socialImage] : undefined,
     },
     // 在根 layout 声明后会随普通 metadata 合并规则向下游所有页面传播（不像 metadataBase/icons
     // 需要跨根重复声明那样受限），Google Search Console 只需要在任意一个已抓取到的页面上

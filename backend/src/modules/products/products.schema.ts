@@ -17,6 +17,7 @@ export const createProductSchema = z.object({
   shortDescription: z.string().optional(),
   description: z.string().optional(),
   mainImage: z.string().min(1, '请上传主图'),
+  videoUrl: z.string().optional(),
   galleryImages: z.array(imageItemSchema).default([]),
   specs: z.array(specItemSchema).default([]),
   features: z.array(z.union([z.string(), z.object({ title: z.string(), description: z.string().optional() })])).default([]),

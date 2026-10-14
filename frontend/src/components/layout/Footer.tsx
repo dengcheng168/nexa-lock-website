@@ -57,26 +57,33 @@ export async function Footer({ locale = 'en' }: { locale?: Locale } = {}) {
   const year = new Date().getFullYear();
   const activeSocialLinks = settings.socialLinks.filter((link) => link.enabled && link.url);
   const whatsappHref = getWhatsappHref(settings);
+  const brandLabel = settings.brandName || settings.companyName || 'NEXA LOCK';
+  const copyrightText = settings.footerText && !/placeholder/i.test(settings.footerText)
+    ? settings.footerText
+    : `© ${year} ${brandLabel}. ${t(locale, 'footerRightsReserved')}`;
 
   return (
-    <footer className="mt-auto border-t border-grey-200 bg-navy-950 text-grey-200">
-      <Container className="grid gap-10 py-12 sm:grid-cols-2 lg:grid-cols-4">
-        <div>
+    <footer className="mt-auto border-t-4 border-[#69c4ef] bg-[linear-gradient(118deg,#124e75_0%,#176b98_56%,#1f7eaa_100%)] text-white">
+      <Container className="grid gap-10 py-11 sm:grid-cols-2 lg:grid-cols-[1.15fr_0.85fr_1.15fr_1fr] lg:gap-12">
+        <div className="max-w-sm">
           {settings.companyLogoUrl ? (
             <span className="relative block h-9 w-40">
               <Image
                 src={toThumbnailUrl(settings.companyLogoUrl)}
-                alt={settings.brandName || settings.companyName || 'Li-Men'}
+                alt={settings.brandName || settings.companyName || 'NEXA LOCK'}
                 fill
                 sizes="160px"
                 className="object-contain object-left"
               />
             </span>
           ) : (
-            <div className="text-lg font-semibold text-white">{settings.brandName || settings.companyName || 'Li-Men'}</div>
+            <div className="text-xl font-semibold tracking-[-0.02em] text-white">{settings.brandName || settings.companyName || 'NEXA LOCK'}</div>
           )}
           {settings.footerCompanyIntro && (
-            <p className="mt-3 text-sm leading-relaxed text-grey-200/80">{settings.footerCompanyIntro}</p>
+            <p className="mt-3 text-sm leading-relaxed text-white/78">{settings.footerCompanyIntro}</p>
+          )}
+          {!settings.footerCompanyIntro && (
+            <p className="mt-4 max-w-xs text-sm leading-6 text-white/75">Smart lock solutions for residential, hospitality and specialty-door projects.</p>
           )}
 
           {activeSocialLinks.length > 0 && (
@@ -90,7 +97,7 @@ export async function Footer({ locale = 'en' }: { locale?: Locale } = {}) {
                     target="_blank"
                     rel="noopener noreferrer"
                     aria-label={link.label}
-                    className="flex h-9 w-9 items-center justify-center rounded-md bg-white/10 text-grey-200/80 transition hover:bg-water-500 hover:text-white"
+                    className="flex h-9 w-9 items-center justify-center rounded-md border border-white/15 bg-white/10 text-white transition hover:bg-white hover:text-[#145678]"
                   >
                     {Icon ? <Icon className="h-4 w-4" /> : <span className="text-xs">{link.label[0]}</span>}
                   </a>
@@ -101,16 +108,12 @@ export async function Footer({ locale = 'en' }: { locale?: Locale } = {}) {
         </div>
 
         <div>
-          <div className="text-sm font-semibold uppercase tracking-wide text-white/90">{t(locale, 'footerQuickNav')}</div>
-          <ul className="mt-3 space-y-2">
-            {navItems.map((item) => (
+          <div className="text-sm font-semibold uppercase tracking-wide text-white">{t(locale, 'footerQuickNav')}</div>
+          <ul className="mt-4 space-y-2.5">
+            {navItems.slice(0, 6).map((item) => (
               <li key={item.id}>
-                <Link
-                  href={item.url}
-                  target={item.openInNewTab ? '_blank' : undefined}
-                  className="flex items-center gap-1.5 text-sm text-grey-200/80 hover:text-white"
-                >
-                  <span className="text-water-500">&gt;</span> {item.label}
+                <Link href={item.url} target={item.openInNewTab ? '_blank' : undefined} className="flex items-center gap-2 text-sm text-white/78 hover:text-white">
+                  <span aria-hidden="true" className="text-[#89d7fa]">›</span>{item.label}
                 </Link>
               </li>
             ))}
@@ -118,12 +121,12 @@ export async function Footer({ locale = 'en' }: { locale?: Locale } = {}) {
         </div>
 
         <div>
-          <div className="text-sm font-semibold uppercase tracking-wide text-white/90">{t(locale, 'footerCategories')}</div>
-          <ul className="mt-3 space-y-2">
+          <div className="text-sm font-semibold uppercase tracking-wide text-white">{t(locale, 'footerCategories')}</div>
+          <ul className="mt-4 space-y-2.5">
             {categories.map((category) => (
               <li key={category.id}>
-                <Link href={localeHref(`/products/category/${category.slug}`, locale)} className="flex items-center gap-1.5 text-sm text-grey-200/80 hover:text-white">
-                  <span className="text-water-500">&gt;</span> {category.name}
+                <Link href={localeHref(`/products/category/${category.slug}`, locale)} className="flex items-start gap-2 text-sm leading-5 text-white/78 hover:text-white">
+                  <span aria-hidden="true" className="mt-px text-[#89d7fa]">›</span>{category.name}
                 </Link>
               </li>
             ))}
@@ -131,16 +134,14 @@ export async function Footer({ locale = 'en' }: { locale?: Locale } = {}) {
         </div>
 
         <div>
-          <div className="text-sm font-semibold uppercase tracking-wide text-white/90">{t(locale, 'footerContactUs')}</div>
+          <div className="text-sm font-semibold uppercase tracking-wide text-white">{t(locale, 'footerContactUs')}</div>
           <ul className="mt-4 space-y-4">
             {settings.companyPhone && (
               <li className="flex items-start gap-3">
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-white/10 text-water-500">
-                  <PhoneIcon className="h-4 w-4" />
-                </span>
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center border border-white/15 bg-white/10 text-[#a5e3ff]"><PhoneIcon className="h-4 w-4" /></span>
                 <div>
-                  <div className="text-xs text-grey-200/60">{t(locale, 'footerPhone')}</div>
-                  <a href={`tel:${settings.companyPhone}`} className="text-sm font-medium text-white hover:text-water-400">
+                  <div className="text-xs text-white/60">{t(locale, 'footerPhone')}</div>
+                  <a href={`tel:${settings.companyPhone}`} className="text-sm font-semibold text-white hover:text-[#bce9ff]">
                     {settings.companyPhone}
                   </a>
                 </div>
@@ -148,25 +149,21 @@ export async function Footer({ locale = 'en' }: { locale?: Locale } = {}) {
             )}
             {settings.companyEmail && (
               <li className="flex items-start gap-3">
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-white/10 text-water-500">
-                  <MailIcon className="h-4 w-4" />
-                </span>
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center border border-white/15 bg-white/10 text-[#a5e3ff]"><MailIcon className="h-4 w-4" /></span>
                 <div>
-                  <div className="text-xs text-grey-200/60">{t(locale, 'footerEmail')}</div>
-                  <a href={`mailto:${settings.companyEmail}`} className="text-sm font-medium text-white hover:text-water-400">
+                  <div className="text-xs text-white/60">{t(locale, 'footerEmail')}</div>
+                  <a href={`mailto:${settings.companyEmail}`} className="text-sm font-semibold text-white hover:text-[#bce9ff]">
                     {settings.companyEmail}
                   </a>
                 </div>
               </li>
             )}
-            {settings.companyAddress && (
+            {settings.companyAddress && !/placeholder/i.test(settings.companyAddress) && (
               <li className="flex items-start gap-3">
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-white/10 text-water-500">
-                  <MapPinIcon className="h-4 w-4" />
-                </span>
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center border border-white/15 bg-white/10 text-[#a5e3ff]"><MapPinIcon className="h-4 w-4" /></span>
                 <div>
-                  <div className="text-xs text-grey-200/60">{t(locale, 'footerAddress')}</div>
-                  <div className="text-sm font-medium text-white">{settings.companyAddress}</div>
+                  <div className="text-xs text-white/60">{t(locale, 'footerAddress')}</div>
+                  <div className="text-sm font-semibold text-white">{settings.companyAddress}</div>
                 </div>
               </li>
             )}
@@ -174,9 +171,9 @@ export async function Footer({ locale = 'en' }: { locale?: Locale } = {}) {
         </div>
       </Container>
 
-      <div className="border-t border-white/10 py-4">
-        <Container className="flex flex-col items-center justify-between gap-3 text-xs text-grey-200/60 sm:flex-row">
-          <p>{settings.footerText || `© ${year} ${settings.companyName || 'Li-Men'} ${t(locale, 'footerRightsReserved')}`}</p>
+      <div className="border-t border-white/15 bg-[#0e466c]/28 py-4">
+        <Container className="flex flex-col items-center justify-between gap-3 text-xs text-white/62 sm:flex-row">
+          <p>{copyrightText}</p>
           <div className="flex items-center gap-4">
             <Link href={localeHref('/privacy-policy', locale)} className="hover:text-white">
               {t(locale, 'footerPrivacyPolicy')}
