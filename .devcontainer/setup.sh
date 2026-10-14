@@ -9,7 +9,7 @@ DB_FILE="$ROOT/backend/prisma/dev.db"
 mkdir -p "$DATA_DIR" "$ROOT/backend/uploads/originals" "$ROOT/backend/uploads/webp" "$ROOT/backend/uploads/thumbnails"
 
 cd "$ROOT/backend"
-npm ci
+npm install --no-audit --no-fund
 npx prisma generate
 npx prisma migrate deploy
 
@@ -27,7 +27,7 @@ npm run seed
 ADMIN_INIT_EMAIL="admin@example.com" ADMIN_INIT_PASSWORD="$ADMIN_PASSWORD" npm run create-admin
 
 cd "$ROOT/frontend"
-npm ci
+npm install --no-audit --no-fund
 
 cat <<EOF
 
