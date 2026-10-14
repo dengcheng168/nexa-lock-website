@@ -9,6 +9,7 @@ DB_FILE="$ROOT/backend/prisma/dev.db"
 mkdir -p "$DATA_DIR" "$ROOT/backend/uploads/originals" "$ROOT/backend/uploads/webp" "$ROOT/backend/uploads/thumbnails"
 
 cd "$ROOT/backend"
+export DATABASE_URL="${DATABASE_URL:-file:./dev.db}"
 npm install --no-audit --no-fund
 npx prisma generate
 npx prisma migrate deploy
