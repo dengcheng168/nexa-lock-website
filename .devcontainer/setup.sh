@@ -13,6 +13,9 @@ export DATABASE_URL="${DATABASE_URL:-file:./dev.db}"
 npm install --no-audit --no-fund
 npx prisma generate
 npx prisma migrate deploy
+# The preview database is disposable. Keep it aligned with the current Prisma schema even
+# when a work-in-progress field has not received a formal production migration yet.
+npx prisma db push --accept-data-loss
 
 if [[ ! -s "$PASSWORD_FILE" ]]; then
   ADMIN_PASSWORD="Nexa-$(openssl rand -hex 10)!"
